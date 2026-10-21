@@ -19,6 +19,7 @@ Future<void> main() async {
   final jukebox = Jukebox(library, settings, LocalOutput());
   final browse = Browse(library);
   if (settings.isConfigured) library.init();
+  library.startAutoSync();
 
   runApp(AppScope(
     settings: settings,

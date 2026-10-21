@@ -43,6 +43,20 @@ class Settings extends ChangeNotifier {
 
   int get cardsPerPage => _p.getInt('cardsPerPage') ?? 4;
 
+  /// May guests move a queued song to the top?
+  bool get allowBump => _p.getBool('allowBump') ?? true;
+
+  /// Re-sync the library when the cache is older than this; 0 = never.
+  int get autoSyncHours => _p.getInt('autoSyncHours') ?? 24;
+
+  // ---- AI random play (Ollama) ----
+  bool get aiEnabled => _p.getBool('aiEnabled') ?? false;
+  String get ollamaUrl => _p.getString('ollamaUrl') ?? 'http://localhost:11434';
+  String get aiModel => _p.getString('aiModel') ?? '';
+
+  /// Songs requested within this many hours steer the AI's picks.
+  int get aiLookbackHours => _p.getInt('aiLookbackHours') ?? 3;
+
   Future<void> _set(String k, Object v) async {
     switch (v) {
       case bool b: await _p.setBool(k, b);
@@ -65,4 +79,13 @@ class Settings extends ChangeNotifier {
   set mixedSinglesSize(int v) => _set('mixedSinglesSize', v);
   set albumMinTracks(int v) => _set('albumMinTracks', v);
   set cardsPerPage(int v) => _set('cardsPerPage', v);
+  String get serverId => _p.getString('serverId') ?? '';
+  set serverId(String v) => _p.setString('serverId', v);
+
+  set allowBump(bool v) => _set('allowBump', v);
+  set autoSyncHours(int v) => _set('autoSyncHours', v);
+  set aiEnabled(bool v) => _set('aiEnabled', v);
+  set ollamaUrl(String v) => _set('ollamaUrl', v.trim().replaceAll(RegExp(r'/+$'), ''));
+  set aiModel(String v) => _set('aiModel', v);
+  set aiLookbackHours(int v) => _set('aiLookbackHours', v);
 }

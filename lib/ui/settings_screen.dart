@@ -16,7 +16,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  late final TextEditingController _url, _token, _lib;
+  late final TextEditingController _url, _token, _lib, _ollama;
+  List<String> _models = [];
+  String? _aiMsg;
   String? _connMsg;
   bool _busy = false;
   String? _pinCode;
@@ -29,6 +31,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _url = TextEditingController(text: s.plexUrl.isEmpty ? 'http://' : s.plexUrl);
     _token = TextEditingController(text: s.plexToken);
     _lib = TextEditingController(text: s.musicLibrary);
+    _ollama = TextEditingController(text: s.ollamaUrl);
+  }
+
+  Future<void> _loadModels() async {
+    final app = AppScope.of(context);
+    app.settings.ollamaUrl = _ollama.text;
+    setState(() => _aiMsg = 'Contacting Ollama…');
+    try {
+      final models = await app.jukebox.ai.models();
+      setState(() {
+        _models = models;
+        _aiMsg = '${models.length} models available. A small, fast model works best (e.g. a 7–9B model).';
+      });
+    } catch (e) {
+      setState(() => _aiMsg = 'Could not reach Ollama: $e');
+    }
   }
 
   @override
@@ -37,6 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _url.dispose();
     _token.dispose();
     _lib.dispose();
+    _ollama.dispose();
     super.dispose();
   }
 
@@ -106,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             style: const TextStyle(color: Jb.neon, fontSize: 26)),
       ),
       body: ListenableBuilder(
-        listenable: Listenable.merge([s, app.library]),
+        listenable: Listenable.merge([s, app.library, app.jukebox]),
         builder: (context, _) => ListView(
           padding: const EdgeInsets.all(24),
           children: [
@@ -172,8 +191,75 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _section('QUEUE'),
               _switch('Allow removing songs from the queue', s.allowDelete, (v) => s.allowDelete = v),
               _switch('Allow skipping the current song', s.allowSkip, (v) => s.allowSkip = v),
+              _switch('Allow bumping a queued song to the top', s.allowBump, (v) => s.allowBump = v),
               _switch('Random play when the queue is empty', s.randomWhenEmpty, (v) => s.randomWhenEmpty = v,
                   sub: 'Picks songs matching the genres of recently played tracks'),
+              _section('AI DJ (OLLAMA)'),
+              _switch('Use AI for random play', s.aiEnabled, (v) => s.aiEnabled = v,
+                  sub: 'An AI model picks songs that fit what people requested recently. '
+                      'Falls back to genre-random if the AI is unavailable.'),
+              Row(children: [
+                Expanded(child: _field(_ollama, 'Ollama URL', 'http://192.168.1.20:11434')),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+                  onPressed: _loadModels,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Load models'),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                const Text('Model', style: TextStyle(fontSize: 18)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    value: s.aiModel.isEmpty ? null : s.aiModel,
+                    hint: const Text('Load models, then choose one'),
+                    items: [
+                      for (final m in {..._models, if (s.aiModel.isNotEmpty) s.aiModel})
+                        DropdownMenuItem(value: m, child: Text(m, style: const TextStyle(fontSize: 18))),
+                    ],
+                    onChanged: (m) => s.aiModel = m ?? '',
+                  ),
+                ),
+              ]),
+              if (_aiMsg != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(_aiMsg!, style: const TextStyle(color: Jb.chrome)),
+                ),
+              const SizedBox(height: 8),
+              const Text('Follow songs requested in the last', style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Wrap(spacing: 10, children: [
+                for (final h in const [1, 2, 3, 6, 12, 24])
+                  ChoiceChip(
+                    label: Text('$h h', style: const TextStyle(fontSize: 18)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    selected: s.aiLookbackHours == h,
+                    onSelected: (_) => s.aiLookbackHours = h,
+                  ),
+              ]),
+              if (app.jukebox.aiError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text('Last AI error: ${app.jukebox.aiError}',
+                      maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.redAccent)),
+                ),
+              _section('LIBRARY SYNC'),
+              const Text('Automatically re-sync with Plex every', style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 8),
+              Wrap(spacing: 10, children: [
+                for (final (h, label) in const [(0, 'Off'), (6, '6 h'), (12, '12 h'), (24, '24 h'), (72, '3 days'), (168, '7 days')])
+                  ChoiceChip(
+                    label: Text(label, style: const TextStyle(fontSize: 18)),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    selected: s.autoSyncHours == h,
+                    onSelected: (_) => s.autoSyncHours = h,
+                  ),
+              ]),
               _section('DISPLAY'),
               _stepper('Album cards per screen', s.cardsPerPage, 2, 6, (v) => s.cardsPerPage = v),
               _section('CATALOGUE NUMBERING'),

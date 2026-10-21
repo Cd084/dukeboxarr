@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../browse.dart';
+import '../jukebox.dart';
+import '../models.dart';
 import 'queue_view.dart';
 import 'theme.dart';
 
@@ -21,7 +23,7 @@ class NowPlayingBar extends StatelessWidget {
         final album = cur == null ? null : app.library.albums[cur.song.albumKey];
         final art = app.library.client.artUrl(album?.thumb, size: 160);
         return Container(
-          height: 92,
+          height: 112,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: const BoxDecoration(
             gradient: LinearGradient(colors: [Color(0xFF3A1F17), Jb.cabinet, Color(0xFF3A1F17)]),
@@ -70,6 +72,8 @@ class NowPlayingBar extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(color: Jb.chrome, fontSize: 14)),
+                          const SizedBox(height: 2),
+                          _NextUp(jb),
                         ],
                       ),
               ),
@@ -118,6 +122,36 @@ class NowPlayingBar extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _NextUp extends StatelessWidget {
+  final Jukebox jb;
+  const _NextUp(this.jb);
+
+  @override
+  Widget build(BuildContext context) {
+    final n = jb.nextUp;
+    final String text;
+    if (n != null) {
+      final tag = switch (n.source) { Source.ai => '  ·  AI pick', Source.random => '  ·  random', _ => '' };
+      text = '${n.song.title} — ${n.song.artist}$tag';
+    } else if (jb.aiBusy) {
+      text = 'AI DJ is choosing…';
+    } else {
+      return const SizedBox.shrink();
+    }
+    return Text.rich(
+      TextSpan(children: [
+        const TextSpan(
+            text: 'NEXT UP  ',
+            style: TextStyle(color: Jb.neon, fontWeight: FontWeight.bold, letterSpacing: 2, fontSize: 12)),
+        TextSpan(text: text),
+      ]),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(color: Colors.white70, fontSize: 14),
     );
   }
 }

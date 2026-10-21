@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -75,10 +76,37 @@ class Library extends ChangeNotifier {
     await sync();
   }
 
+  Timer? _autoTimer;
+
+  /// Like B-Side: check 1 minute after start, then every 15 minutes, and
+  /// re-sync when the cache is older than Settings.autoSyncHours. The old
+  /// catalogue stays in use until the new one is ready.
+  void startAutoSync() {
+    _autoTimer?.cancel();
+    Timer(const Duration(minutes: 1), _autoCheck);
+    _autoTimer = Timer.periodic(const Duration(minutes: 15), (_) => _autoCheck());
+  }
+
+  void _autoCheck() {
+    final h = settings.autoSyncHours;
+    if (h <= 0 || loading || entries.isEmpty || syncedAt == null) return;
+    if (DateTime.now().difference(syncedAt!) >= Duration(hours: h)) {
+      debugPrint('auto-sync: library cache is older than $h h');
+      sync();
+    }
+  }
+
   Future<void> sync() async {
+    if (_syncing) return;
+    _syncing = true;
     error = null;
     _set(loading: true, status: 'Connecting to Plex…');
     try {
+      // A different server means the old numbers mean nothing; renumber.
+      final serverId = await client.machineId() ?? '';
+      final newServer = settings.serverId.isNotEmpty && serverId != settings.serverId;
+      settings.serverId = serverId;
+
       final sections = await client.musicSections();
       final section = sections[settings.musicLibrary] ??
           (sections.isNotEmpty ? sections.values.first : null);
@@ -98,13 +126,20 @@ class Library extends ChangeNotifier {
       artistGenres = data.artistGenres;
       syncedAt = DateTime.now();
       final json = await compute(_encodeCache, data);
-      await File('${(await _dir()).path}/library.json').writeAsString(json);
-      await rebuildCatalog();
+      // Write-then-rename so a failed sync never leaves a broken cache.
+      final dir = (await _dir()).path;
+      await File('$dir/library.json.tmp').writeAsString(json);
+      await File('$dir/library.json.tmp').rename('$dir/library.json');
+      await rebuildCatalog(renumber: newServer);
     } catch (e) {
       error = e.toString();
     }
+    _syncing = false;
     _set(loading: false, status: '');
   }
+
+  bool _syncing = false;
+  bool get syncing => _syncing;
 
   /// Groups songs into numbered entries. Numbers persist across syncs.
   Future<void> rebuildCatalog({bool renumber = false}) async {

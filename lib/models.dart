@@ -110,10 +110,14 @@ class CardPart {
   const CardPart(this.entry, this.start, this.end, this.part, this.parts);
 }
 
+enum Source { request, random, ai }
+
 /// A song placed in the queue / now playing, with how it got there.
 class QueueItem {
   final Song song;
   final Entry? entry;
-  final bool random;
-  const QueueItem(this.song, this.entry, {this.random = false});
+  final Source source;
+  const QueueItem(this.song, this.entry, {this.source = Source.request});
+
+  bool get random => source != Source.request;
 }

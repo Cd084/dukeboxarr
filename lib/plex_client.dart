@@ -65,6 +65,20 @@ class PlexClient {
     return out;
   }
 
+  /// Unique id of the server, to notice when the URL points somewhere new.
+  Future<String?> machineId() async => (await _get('/identity'))['machineIdentifier'] as String?;
+
+  /// Audio playlists: [{ratingKey, title, leafCount, composite, smart, duration}].
+  Future<List<Map<String, dynamic>>> playlists() async =>
+      ((await _get('/playlists?playlistType=audio'))['Metadata'] as List? ?? const [])
+          .cast<Map<String, dynamic>>();
+
+  /// Track ratingKeys of a playlist, in playlist order.
+  Future<List<String>> playlistItemKeys(String key) async => [
+        for (final m in ((await _get('/playlists/$key/items'))['Metadata'] as List? ?? const []))
+          m['ratingKey'].toString()
+      ];
+
   String streamUrl(String partKey) => '$baseUrl$partKey?X-Plex-Token=$token';
 
   String? artUrl(String? thumb, {int size = 300}) {

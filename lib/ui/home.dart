@@ -9,6 +9,7 @@ import 'actions.dart';
 import 'album_card.dart';
 import 'keypad.dart';
 import 'now_playing.dart';
+import 'playlists.dart';
 import 'search.dart';
 import 'settings_screen.dart';
 import 'theme.dart';
@@ -59,8 +60,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   int _pageOf(List<CardPart> parts, Browse b, int perPage) {
     if (b.anchor == null) return 0;
-    var idx = parts.indexWhere((p) => p.entry == b.anchor && p.part == b.anchorPart);
-    if (idx < 0) idx = parts.indexWhere((p) => p.entry == b.anchor);
+    var idx = parts.indexWhere((p) => p.entry.id == b.anchor!.id && p.part == b.anchorPart);
+    if (idx < 0) idx = parts.indexWhere((p) => p.entry.id == b.anchor!.id);
     return idx < 0 ? 0 : idx ~/ perPage;
   }
 
@@ -298,7 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           onPage.isEmpty
                               ? ''
-                              : 'Page ${page + 1} of $pages   ·   ${onPage.first.entry.code}–${onPage.last.entry.code}',
+                              : 'Page ${page + 1} of $pages   ·   ${onPage.first.entry.code}–${onPage.last.entry.code}'
+                                  '${app.library.syncing ? '   ·   syncing library…' : ''}',
                           style: const TextStyle(color: Jb.chrome, fontSize: 13),
                         ),
                       ],
@@ -310,6 +312,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   _toolButton(Icons.dialpad, 'KEYPAD', () => showKeypad(context)),
                   const SizedBox(width: 8),
                   _toolButton(Icons.search, 'SEARCH', () => openSearch(context)),
+                  const SizedBox(width: 8),
+                  _toolButton(Icons.playlist_play, 'PLAYLISTS', () => openPlaylists(context)),
                   const SizedBox(width: 8),
                   _toolButton(Icons.settings, '', _openSettings),
                 ],
