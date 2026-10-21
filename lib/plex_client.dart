@@ -31,11 +31,11 @@ class PlexClient {
 
   /// How this device appears in Plex (Dashboard, Tautulli, Authorized Devices).
   static final Map<String, String> device = {
-    'X-Plex-Product': 'Dukebox',
+    'X-Plex-Product': 'DukeBoxarr',
     'X-Plex-Version': '1.0',
-    'X-Plex-Device': 'Dukebox',
+    'X-Plex-Device': 'DukeBoxarr',
     // Header values must be ASCII.
-    'X-Plex-Device-Name': 'Dukebox (${Platform.localHostname.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
+    'X-Plex-Device-Name': 'DukeBoxarr (${Platform.localHostname.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
     'X-Plex-Platform': switch (Platform.operatingSystem) {
       'windows' => 'Windows',
       'android' => 'Android',

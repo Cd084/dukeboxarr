@@ -1,4 +1,4 @@
-# Dukebox
+# DukeBoxarr
 
 An old-school touch-screen jukebox for a Plex music library. Browse album "title strips", tap a song or punch in its number, and it joins the queue. When the queue runs dry, an AI DJ, or genre-matched random play, keeps the music going.
 
@@ -34,30 +34,30 @@ It's built with Flutter. Windows is supported now; Android, Linux and iOS are pl
 - **Queue screen:** the current song, the requests, then the lined-up AI or random picks. Each request has **BUMP** (make it play next) and **remove**, if allowed in Settings.
 
 ### Random play and the AI DJ
-When the queue is empty, Dukebox chooses the next song itself.
+When the queue is empty, DukeBoxarr chooses the next song itself.
 - **Genre random** (default): a random song weighted toward the genres of the last 15 plays. Songs people chose count 3× as much as random ones, so it follows the room rather than drifting.
 - **AI DJ** (optional): a local model running in [Ollama](https://ollama.com) picks 5 songs that fit what people requested recently.
   - "Recently" is a window you choose in Settings: 1 to 24 hours. If nobody requested anything in that window, it follows whatever played.
   - It picks from a few hundred candidates in matching genres, skipping anything played recently.
   - It picks while the current song plays, so there's no gap. A new request makes it re-pick around that request.
-  - If Ollama is slow or unreachable, Dukebox falls back to genre random. The music never stops.
+  - If Ollama is slow or unreachable, DukeBoxarr falls back to genre random. The music never stops.
 
 ### Where the music plays
 - **This device:** its speakers, or whatever it's plugged into.
-- **A Plex player:** a Plex app on a TV or streamer, or Plexamp. Dukebox stays in charge of the queue:
+- **A Plex player:** a Plex app on a TV or streamer, or Plexamp. DukeBoxarr stays in charge of the queue:
   - It tells the player which song to play and checks its progress every second to know when the song ends.
   - Pause and skip control the player.
   - If the player stops responding, playback switches back to this device and a warning appears in the top bar.
 
 ### Plex integration
-- **Sign-in:** through plex.tv/link (Dukebox gets its own revocable device token), or paste a token.
+- **Sign-in:** through plex.tv/link (DukeBoxarr gets its own revocable device token), or paste a token.
 - **Library cache:** a local copy for instant start-up, and it can re-sync automatically. The old library stays usable during a sync, and a failed sync never damages it.
 - **Fixed numbers:** album numbers stay the same as your library grows.
   - New albums get the next free numbers.
   - "Renumber" (in Settings) re-sorts everything A–Z.
-  - Numbers are reset automatically if Dukebox is pointed at a different Plex server.
+  - Numbers are reset automatically if DukeBoxarr is pointed at a different Plex server.
 - **Shows up in Plex** (optional):
-  - Plays on this device appear in the Plex Dashboard and Tautulli as **"Dukebox (*computer name*)"**.
+  - Plays on this device appear in the Plex Dashboard and Tautulli as **"DukeBoxarr (*computer name*)"**.
   - Songs that play to the end count as plays.
 
 ### Kiosk-friendly
@@ -68,7 +68,7 @@ When the queue is empty, Dukebox chooses the next song itself.
 
 ## Selection numbers and singles
 
-Many libraries contain thousands of one-track "albums" (loose singles). Giving each its own number would bury the real albums, so Dukebox groups them:
+Many libraries contain thousands of one-track "albums" (loose singles). Giving each its own number would bury the real albums, so DukeBoxarr groups them:
 
 | Release | How it appears |
 |---|---|
@@ -121,7 +121,7 @@ The last AI error, if any, is shown in this section.
 | Setting | Default | What it does |
 |---|---|---|
 | Play music on | This device | **This device** or a Plex player. Tap **Find Plex players** to search; the Plex app must be open on the player. |
-| Report playback to Plex | On | Shows Dukebox in the Plex Dashboard and Tautulli, and updates play counts. Plays count toward the signed-in Plex user. |
+| Report playback to Plex | On | Shows DukeBoxarr in the Plex Dashboard and Tautulli, and updates play counts. Plays count toward the signed-in Plex user. |
 
 ### Security
 | Setting | Default | What it does |
@@ -144,7 +144,7 @@ The last AI error, if any, is shown in this section.
 
 ### Choosing an AI model
 
-The AI DJ needs a small, fast, non-reasoning model that follows instructions well and knows music. Dukebox switches off "thinking" for models that support it. Big reasoning models are slower and pick no better.
+The AI DJ needs a small, fast, non-reasoning model that follows instructions well and knows music. DukeBoxarr switches off "thinking" for models that support it. Big reasoning models are slower and pick no better.
 
 **Recommended**
 | Model | Size on GPU | Why |
@@ -169,8 +169,8 @@ The AI DJ needs a small, fast, non-reasoning model that follows instructions wel
 
 **Notes**
 - Times are from an older 2× Nvidia P40 server.
-- The first request after the model has been unloaded takes 20–50 s longer while Ollama loads it. Dukebox keeps the model loaded for 30 minutes after each use.
-- Dukebox picks during the current song, so any model that answers in well under a song's length is fine.
+- The first request after the model has been unloaded takes 20–50 s longer while Ollama loads it. DukeBoxarr keeps the model loaded for 30 minutes after each use.
+- DukeBoxarr picks during the current song, so any model that answers in well under a song's length is fine.
 - Install a model with `ollama pull qwen3.5:4b`, then choose it under Settings → AI DJ → Load models.
 
 You can compare models on your own library with the live test (see [Building](#building)).
@@ -179,15 +179,16 @@ You can compare models on your own library with the live test (see [Building](#b
 
 ## Tips
 
-- **Use a separate Plex user for Dukebox.** Create a Plex Home or managed user (e.g. "Jukebox") and sign Dukebox in as it. Guests' plays then stay out of your own history and recommendations, and Tautulli can mute notifications for just that user.
+- **Use a separate Plex user for DukeBoxarr.** Create a Plex Home or managed user (e.g. "Jukebox") and sign DukeBoxarr in as it. Guests' plays then stay out of your own history and recommendations, and Tautulli can mute notifications for just that user.
 - **A Plex player isn't found:**
   1. Open Plex on the device first, signed in to the same account.
   2. Make sure it allows remote control ("Advertise as player").
   3. On the server, check that Settings → Network → *Enable local network discovery (GDM)* is on.
-- **Forgot the Settings PIN:** close Dukebox and delete the `flutter.adminPin` line from `%APPDATA%\ca.dukebox\dukebox\shared_preferences.json`.
+- **Forgot the Settings PIN:** close DukeBoxarr and delete the `flutter.adminPin` line from `%APPDATA%\ca.dukebox\dukebox\shared_preferences.json`.
 - **Where data lives (Windows):**
   - Settings: `%APPDATA%\ca.dukebox\dukebox\shared_preferences.json`
   - Library cache and album numbers: `%APPDATA%\ca.dukebox\dukebox\dukebox\` (`library.json`, `numbers.json`)
+  - These folders, and the package id `ca.dukebox`, still use the project's original name "dukebox". Changing them would lose existing settings and album numbers.
 
 ---
 
@@ -197,7 +198,7 @@ You need the [Flutter SDK](https://docs.flutter.dev/get-started/install). For Wi
 
 ```sh
 flutter run -d windows               # run in debug mode (press r to hot reload)
-flutter build windows --release      # build to build\windows\x64\runner\Release\
+flutter build windows --release      # build to build\windows\x64\runner\Release\dukeboxarr.exe
 flutter test                         # unit tests
 ```
 

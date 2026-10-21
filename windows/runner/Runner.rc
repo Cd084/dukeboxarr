@@ -90,11 +90,11 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "ca.dukebox" "\0"
-            VALUE "FileDescription", "dukebox" "\0"
+            VALUE "FileDescription", "DukeBoxarr" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "dukebox" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 ca.dukebox. All rights reserved." "\0"
-            VALUE "OriginalFilename", "dukebox.exe" "\0"
+            VALUE "OriginalFilename", "dukeboxarr.exe" "\0"
             VALUE "ProductName", "dukebox" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

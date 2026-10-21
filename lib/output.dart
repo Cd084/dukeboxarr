@@ -53,7 +53,7 @@ class LocalOutput implements AudioOutput {
 }
 
 /// Plays on a Plex player (TV app, streamer, Plexamp) via the Plex remote
-/// control API. Dukebox stays in charge of the queue: each song is sent as a
+/// control API. DukeBoxarr stays in charge of the queue: each song is sent as a
 /// one-song play queue, and the player's timeline is polled to know when it
 /// has finished.
 class PlexRemoteOutput implements AudioOutput {
@@ -94,7 +94,7 @@ class PlexRemoteOutput implements AudioOutput {
   Map<String, String> get _headers => {
         ...PlexClient.headers(server.clientId, server.token),
         'X-Plex-Target-Client-Identifier': player.id,
-        'X-Plex-Device-Name': 'Dukebox',
+        'X-Plex-Device-Name': 'DukeBoxarr',
       };
 
   /// Sends a command to the player: directly if possible, otherwise through

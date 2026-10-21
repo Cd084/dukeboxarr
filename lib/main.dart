@@ -27,18 +27,18 @@ Future<void> main() async {
     library: library,
     jukebox: jukebox,
     browse: browse,
-    child: const DukeboxApp(),
+    child: const DukeBoxarrApp(),
   ));
 }
 
-class DukeboxApp extends StatelessWidget {
-  const DukeboxApp({super.key});
+class DukeBoxarrApp extends StatelessWidget {
+  const DukeBoxarrApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     return MaterialApp(
-      title: 'Dukebox',
+      title: 'DukeBoxarr',
       debugShowCheckedModeBanner: false,
       theme: Jb.theme(),
       home: ListenableBuilder(
