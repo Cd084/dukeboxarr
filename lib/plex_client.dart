@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -28,12 +29,43 @@ class PlexClient {
       : baseUrl = url.replaceAll(RegExp(r'/+$'), ''),
         _http = client ?? http.Client();
 
+  /// How this device appears in Plex (Dashboard, Tautulli, Authorized Devices).
+  static final Map<String, String> device = {
+    'X-Plex-Product': 'Dukebox',
+    'X-Plex-Version': '1.0',
+    'X-Plex-Device': 'Dukebox',
+    // Header values must be ASCII.
+    'X-Plex-Device-Name': 'Dukebox (${Platform.localHostname.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
+    'X-Plex-Platform': switch (Platform.operatingSystem) {
+      'windows' => 'Windows',
+      'android' => 'Android',
+      'linux' => 'Linux',
+      'macos' => 'macOS',
+      'ios' => 'iOS',
+      final os => os,
+    },
+  };
+
   static Map<String, String> headers(String clientId, [String? token]) => {
         'Accept': 'application/json',
-        'X-Plex-Product': 'Dukebox',
+        ...device,
         'X-Plex-Client-Identifier': clientId,
         if (token != null && token.isNotEmpty) 'X-Plex-Token': token,
       };
+
+  /// Reports local playback progress so the server shows a session
+  /// (Dashboard, Tautulli) and counts plays. [state]: playing, paused, stopped.
+  Future<void> reportTimeline(String songKey, String state, Duration time, Duration duration) async {
+    final uri = Uri.parse('$baseUrl/:/timeline').replace(queryParameters: {
+      'ratingKey': songKey,
+      'key': '/library/metadata/$songKey',
+      'state': state,
+      'time': '${time.inMilliseconds}',
+      'duration': '${duration.inMilliseconds}',
+      'hasMDE': '1',
+    });
+    await _http.get(uri, headers: headers(clientId, token)).timeout(const Duration(seconds: 10));
+  }
 
   Future<Map<String, dynamic>> _get(String path, {Map<String, String>? extra}) async {
     final res = await _http
@@ -135,7 +167,15 @@ class PlexClient {
     return (jsonDecode(res.body)['MediaContainer']['playQueueID']).toString();
   }
 
-  String streamUrl(String partKey) => '$baseUrl$partKey?X-Plex-Token=$token';
+  /// The player can't send headers, so identity goes in the query string;
+  /// that lets the server tie the stream to this client's timeline reports.
+  String streamUrl(String partKey) => Uri.parse('$baseUrl$partKey').replace(queryParameters: {
+        'X-Plex-Token': token,
+        'X-Plex-Client-Identifier': clientId,
+        'X-Plex-Product': device['X-Plex-Product']!,
+        'X-Plex-Device-Name': device['X-Plex-Device-Name']!,
+        'X-Plex-Platform': device['X-Plex-Platform']!,
+      }).toString();
 
   String? artUrl(String? thumb, {int size = 300}) {
     if (thumb == null) return null;

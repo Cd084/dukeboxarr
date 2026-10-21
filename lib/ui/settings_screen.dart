@@ -334,6 +334,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   padding: const EdgeInsets.only(top: 8),
                   child: Text(app.jukebox.outputError!, style: const TextStyle(color: Colors.redAccent)),
                 ),
+              _switch('Report playback to Plex', s.reportToPlex, (v) => s.reportToPlex = v,
+                  sub: 'Shows Dukebox in the Plex Dashboard and Tautulli, and updates play counts. '
+                      'Plays count toward the signed-in Plex user. (Plex players report themselves.)'),
               _section('SECURITY'),
               ListTile(
                 contentPadding: EdgeInsets.zero,

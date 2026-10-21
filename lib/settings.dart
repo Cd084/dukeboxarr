@@ -79,6 +79,10 @@ class Settings extends ChangeNotifier {
   set mixedSinglesSize(int v) => _set('mixedSinglesSize', v);
   set albumMinTracks(int v) => _set('albumMinTracks', v);
   set cardsPerPage(int v) => _set('cardsPerPage', v);
+  /// Tell the Plex server what's playing (Dashboard, Tautulli, play counts).
+  bool get reportToPlex => _p.getBool('reportToPlex') ?? true;
+  set reportToPlex(bool v) => _set('reportToPlex', v);
+
   /// Settings lock; empty = unlocked.
   String get adminPin => _p.getString('adminPin') ?? '';
   set adminPin(String v) => _set('adminPin', v);

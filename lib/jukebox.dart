@@ -51,13 +51,33 @@ class Jukebox extends ChangeNotifier {
     settings.addListener(_onSettings);
     _attach();
     _loadHistory();
+    _reportTimer = Timer.periodic(const Duration(seconds: 10), (_) => _report(playing ? 'playing' : 'paused'));
+  }
+
+  Timer? _reportTimer;
+
+  /// Tells the Plex server what's playing here, so it shows in the Dashboard
+  /// and Tautulli and play counts update. Remote players report themselves.
+  void _report(String state, {Song? song, bool finished = false}) {
+    final s = song ?? current?.song;
+    if (s == null || !settings.reportToPlex || output is! LocalOutput) return;
+    var (pos, dur) = progress.value;
+    if (dur == Duration.zero) dur = Duration(milliseconds: s.durationMs);
+    // A song that played to the end is reported at its end, so Plex counts it.
+    if (finished) pos = dur;
+    library.client
+        .reportTimeline(s.key, state, pos, dur)
+        .catchError((Object e) => debugPrint('timeline report failed: $e'));
   }
 
   void _attach() {
     _subs.addAll([
-      output.completed.listen((_) => next()),
+      output.completed.listen((_) => next(finished: true)),
       output.errors.listen(_onError),
-      output.playing.listen((p) => _update(() => playing = p)),
+      output.playing.listen((p) {
+        if (p != playing) _report(p ? 'playing' : 'paused');
+        _update(() => playing = p);
+      }),
       output.position.listen((p) => progress.value = (p, progress.value.$2)),
       output.duration.listen((d) => progress.value = (progress.value.$1, d)),
     ]);
@@ -69,6 +89,7 @@ class Jukebox extends ChangeNotifier {
       await s.cancel();
     }
     _subs.clear();
+    if (current != null) _report('stopped');
     final old = output;
     output = o;
     _attach();
@@ -137,7 +158,9 @@ class Jukebox extends ChangeNotifier {
   }
 
   /// Advances to the next requested track, or a random/AI one.
-  Future<void> next() async {
+  /// [finished] is true when the current song played to its end.
+  Future<void> next({bool finished = false}) async {
+    if (current case final prev?) _report('stopped', song: prev.song, finished: finished);
     QueueItem? item;
     if (queue.isNotEmpty) {
       item = queue.removeAt(0);
@@ -157,6 +180,7 @@ class Jukebox extends ChangeNotifier {
     _remember(item);
     _refillIfNeeded();
     await output.play(item.song, library.client.streamUrl(item.song.partKey));
+    _report('playing');
   }
 
   /// Set when a remote player failed and playback moved back to this device.
@@ -341,6 +365,7 @@ class Jukebox extends ChangeNotifier {
 
   @override
   void dispose() {
+    _reportTimer?.cancel();
     for (final s in _subs) {
       s.cancel();
     }
