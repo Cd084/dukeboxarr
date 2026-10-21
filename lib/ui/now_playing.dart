@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../browse.dart';
 import '../jukebox.dart';
 import '../models.dart';
+import '../output.dart';
 import 'queue_view.dart';
 import 'theme.dart';
 
@@ -23,7 +24,7 @@ class NowPlayingBar extends StatelessWidget {
         final album = cur == null ? null : app.library.albums[cur.song.albumKey];
         final art = app.library.client.artUrl(album?.thumb, size: 160);
         return Container(
-          height: 112,
+          height: 120,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: const BoxDecoration(
             gradient: LinearGradient(colors: [Color(0xFF3A1F17), Jb.cabinet, Color(0xFF3A1F17)]),
@@ -63,6 +64,25 @@ class NowPlayingBar extends StatelessWidget {
                             if (cur.random)
                               const Text('RANDOM',
                                   style: TextStyle(color: Jb.chrome, fontSize: 12, letterSpacing: 2)),
+                            if (jb.output is! LocalOutput)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 12),
+                                child: Row(children: [
+                                  const Icon(Icons.cast_connected, size: 16, color: Jb.neon),
+                                  const SizedBox(width: 4),
+                                  Text(jb.output.name.toUpperCase(),
+                                      style: const TextStyle(color: Jb.neon, fontSize: 12, letterSpacing: 2)),
+                                ]),
+                              )
+                            else if (jb.outputError != null)
+                              Flexible(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 12),
+                                  child: Text(jb.outputError!,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+                                ),
+                              ),
                           ]),
                           Text(cur.song.title,
                               maxLines: 1,
@@ -72,7 +92,6 @@ class NowPlayingBar extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(color: Jb.chrome, fontSize: 14)),
-                          const SizedBox(height: 2),
                           _NextUp(jb),
                         ],
                       ),

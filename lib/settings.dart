@@ -79,6 +79,24 @@ class Settings extends ChangeNotifier {
   set mixedSinglesSize(int v) => _set('mixedSinglesSize', v);
   set albumMinTracks(int v) => _set('albumMinTracks', v);
   set cardsPerPage(int v) => _set('cardsPerPage', v);
+  /// Settings lock; empty = unlocked.
+  String get adminPin => _p.getString('adminPin') ?? '';
+  set adminPin(String v) => _set('adminPin', v);
+
+  /// Show a 0–9 keypad strip under the A–Z bar.
+  bool get showInlineKeypad => _p.getBool('showInlineKeypad') ?? false;
+  set showInlineKeypad(bool v) => _set('showInlineKeypad', v);
+
+  /// Output: empty id = this device, otherwise a Plex player.
+  String get outputId => _p.getString('outputId') ?? '';
+  String get outputName => _p.getString('outputName') ?? '';
+  List<String> get outputUris => _p.getStringList('outputUris') ?? const [];
+  Future<void> setOutput(String id, String name, List<String> uris) async {
+    await _p.setString('outputName', name);
+    await _p.setStringList('outputUris', uris);
+    await _set('outputId', id);
+  }
+
   String get serverId => _p.getString('serverId') ?? '';
   set serverId(String v) => _p.setString('serverId', v);
 

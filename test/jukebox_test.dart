@@ -24,7 +24,9 @@ class FakeOutput implements AudioOutput {
   @override
   Stream<Duration> get duration => const Stream.empty();
   @override
-  Future<void> play(String url) async => played.add(url);
+  Future<void> play(Song song, String url) async => played.add(url);
+  @override
+  String get name => 'fake';
   @override
   Future<void> togglePause() async {}
   @override

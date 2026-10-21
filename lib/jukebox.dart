@@ -8,6 +8,7 @@ import 'ai_dj.dart';
 import 'library.dart';
 import 'models.dart';
 import 'output.dart';
+import 'plex_client.dart';
 import 'settings.dart';
 
 /// Queue + playback logic.
@@ -20,7 +21,7 @@ import 'settings.dart';
 class Jukebox extends ChangeNotifier {
   final Library library;
   final Settings settings;
-  final AudioOutput output;
+  AudioOutput output;
   final AiDj ai;
   final _rng = Random();
 
@@ -48,6 +49,11 @@ class Jukebox extends ChangeNotifier {
   Jukebox(this.library, this.settings, this.output) : ai = AiDj(settings, library) {
     library.addListener(() => _genreIndex = null);
     settings.addListener(_onSettings);
+    _attach();
+    _loadHistory();
+  }
+
+  void _attach() {
     _subs.addAll([
       output.completed.listen((_) => next()),
       output.errors.listen(_onError),
@@ -55,7 +61,23 @@ class Jukebox extends ChangeNotifier {
       output.position.listen((p) => progress.value = (p, progress.value.$2)),
       output.duration.listen((d) => progress.value = (progress.value.$1, d)),
     ]);
-    _loadHistory();
+  }
+
+  /// Switches where the music plays. The current song restarts there.
+  Future<void> setOutput(AudioOutput o) async {
+    for (final s in _subs) {
+      await s.cancel();
+    }
+    _subs.clear();
+    final old = output;
+    output = o;
+    _attach();
+    await old.stop();
+    await old.dispose();
+    playing = false;
+    notifyListeners();
+    final cur = current;
+    if (cur != null) await output.play(cur.song, library.client.streamUrl(cur.song.partKey));
   }
 
   bool get idle => current == null;
@@ -134,11 +156,37 @@ class Jukebox extends ChangeNotifier {
     }
     _remember(item);
     _refillIfNeeded();
-    await output.play(library.client.streamUrl(item.song.partKey));
+    await output.play(item.song, library.client.streamUrl(item.song.partKey));
+  }
+
+  /// Set when a remote player failed and playback moved back to this device.
+  String? outputError;
+
+  /// Applies Settings' output choice (this device or a Plex player).
+  Future<void> applyOutputSetting() async {
+    outputError = null;
+    final id = settings.outputId;
+    if (id.isEmpty) {
+      if (output is! LocalOutput) await setOutput(LocalOutput());
+      return;
+    }
+    var serverId = settings.serverId;
+    if (serverId.isEmpty) {
+      serverId = await library.client.machineId() ?? '';
+      settings.serverId = serverId;
+    }
+    await setOutput(PlexRemoteOutput(
+        library.client, serverId, PlexPlayer(id, settings.outputName, '', settings.outputUris)));
   }
 
   void _onError(String e) {
     debugPrint('playback error: $e');
+    if (output is PlexRemoteOutput) {
+      // Don't skip through the queue on a dead player: play here instead.
+      outputError = '${output.name} is not responding — playing on this device';
+      setOutput(LocalOutput());
+      return;
+    }
     if (++_consecutiveErrors > 5) {
       current = null;
       notifyListeners();

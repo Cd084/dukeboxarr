@@ -9,6 +9,14 @@ class PlexException implements Exception {
   String toString() => message;
 }
 
+class PlexPlayer {
+  final String id; // clientIdentifier
+  final String name;
+  final String product;
+  final List<String> uris; // direct control URLs, best first
+  const PlexPlayer(this.id, this.name, this.product, this.uris);
+}
+
 /// Minimal Plex Media Server + plex.tv client.
 class PlexClient {
   final String baseUrl;
@@ -78,6 +86,54 @@ class PlexClient {
         for (final m in ((await _get('/playlists/$key/items'))['Metadata'] as List? ?? const []))
           m['ratingKey'].toString()
       ];
+
+  /// Plex players that can be remote-controlled: those the server sees on
+  /// the LAN (/clients) plus those registered with plex.tv.
+  Future<List<PlexPlayer>> players() async {
+    final out = <String, PlexPlayer>{};
+    void add(String? id, String? name, String? product, List<String> uris) {
+      if (id == null || id == clientId) return;
+      final prev = out[id];
+      out[id] = PlexPlayer(id, prev?.name ?? name ?? 'Plex player', prev?.product ?? product ?? '',
+          {...?prev?.uris, ...uris}.toList());
+    }
+
+    try {
+      for (final s in ((await _get('/clients'))['Server'] as List? ?? const [])) {
+        add(s['machineIdentifier'] as String?, s['name'] as String?, s['product'] as String?,
+            ['http://${s['address']}:${s['port']}']);
+      }
+    } catch (_) {}
+    try {
+      final res = await _http
+          .get(Uri.parse('https://plex.tv/api/v2/resources?includeHttps=1&includeRelay=1'),
+              headers: headers(clientId, token))
+          .timeout(const Duration(seconds: 15));
+      for (final r in (jsonDecode(res.body) as List)) {
+        if (!'${r['provides']}'.contains('player')) continue;
+        final conns = (r['connections'] as List? ?? const []);
+        add(r['clientIdentifier'] as String?, r['name'] as String?, r['product'] as String?, [
+          for (final c in conns) if (c['local'] == true) c['uri'] as String,
+          for (final c in conns) if (c['local'] != true) c['uri'] as String,
+        ]);
+      }
+    } catch (_) {}
+    return out.values.toList()..sort((a, b) => a.name.compareTo(b.name));
+  }
+
+  /// Creates a one-song play queue for a remote player to load.
+  Future<String> createPlayQueue(String songKey, String machineId) async {
+    final uri = Uri.parse('$baseUrl/playQueues').replace(queryParameters: {
+      'type': 'audio',
+      'uri': 'server://$machineId/com.plexapp.plugins.library/library/metadata/$songKey',
+      'shuffle': '0',
+      'repeat': '0',
+      'continuous': '0',
+    });
+    final res = await _http.post(uri, headers: headers(clientId, token)).timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw PlexException('Could not create play queue (${res.statusCode})');
+    return (jsonDecode(res.body)['MediaContainer']['playQueueID']).toString();
+  }
 
   String streamUrl(String partKey) => '$baseUrl$partKey?X-Plex-Token=$token';
 

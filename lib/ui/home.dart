@@ -9,6 +9,7 @@ import 'actions.dart';
 import 'album_card.dart';
 import 'keypad.dart';
 import 'now_playing.dart';
+import 'pin.dart';
 import 'playlists.dart';
 import 'search.dart';
 import 'settings_screen.dart';
@@ -25,6 +26,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _focus = FocusNode();
+  late final CodeEntry _code = CodeEntry(AppScope.of(context).library);
   Timer? _repeat;
   int _direction = 1;
 
@@ -37,6 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _repeat?.cancel();
     _focus.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -108,7 +111,13 @@ class _HomeScreenState extends State<HomeScreen> {
   KeyEventResult _onKey(FocusNode _, KeyEvent ev, VoidCallback prev, VoidCallback next) {
     if (ev is! KeyDownEvent) return KeyEventResult.ignored;
     final ch = ev.character;
-    if (ch != null && RegExp(r'^\d$').hasMatch(ch)) {
+    if (AppScope.of(context).settings.showInlineKeypad) {
+      // Typing goes straight into the on-screen keypad strip.
+      final r = _code.handleKey(ev, context, onGoTo: () {
+        if (_code.entry case final e?) AppScope.of(context).browse.jumpTo(e);
+      });
+      if (r == KeyEventResult.handled) return r;
+    } else if (ch != null && RegExp(r'^\d$').hasMatch(ch)) {
       showKeypad(context, initial: ch);
       return KeyEventResult.handled;
     }
@@ -161,16 +170,23 @@ class _HomeScreenState extends State<HomeScreen> {
         ]),
       );
 
-  void _openSettings() =>
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+  Future<void> _openSettings() async {
+    if (!await unlockSettings(context) || !mounted) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+  }
 
   Widget _grid(AppScope app, BoxConstraints box) {
-    const bottomBar = 84.0, filterBar = 48.0, gap = 14.0;
+    const bottomBar = 84.0, filterBar = 48.0, gap = 14.0, keypadBar = 74.0;
+    final inlinePad = app.settings.showInlineKeypad;
     final perPage = app.settings.cardsPerPage;
     final landscape = box.maxWidth > box.maxHeight;
     final rows = landscape ? (perPage > 4 ? 2 : 1) : (perPage > 2 ? 2 : 1);
     final cols = (perPage / rows).ceil();
-    final gridH = box.maxHeight - bottomBar - (app.browse.isFiltered ? filterBar : 0) - gap * (rows + 1);
+    final gridH = box.maxHeight -
+        bottomBar -
+        (inlinePad ? keypadBar : 0) -
+        (app.browse.isFiltered ? filterBar : 0) -
+        gap * (rows + 1);
     final cap = trackCapacity(gridH / rows);
 
     final parts = _split(app.browse.entries, cap);
@@ -309,8 +325,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(width: 10),
                   _navButton(Icons.chevron_right, page < pages - 1 ? next : null),
                   const SizedBox(width: 16),
-                  _toolButton(Icons.dialpad, 'KEYPAD', () => showKeypad(context)),
-                  const SizedBox(width: 8),
+                  if (!inlinePad) ...[
+                    _toolButton(Icons.dialpad, 'KEYPAD', () => showKeypad(context)),
+                    const SizedBox(width: 8),
+                  ],
                   _toolButton(Icons.search, 'SEARCH', () => openSearch(context)),
                   const SizedBox(width: 8),
                   _toolButton(Icons.playlist_play, 'PLAYLISTS', () => openPlaylists(context)),
@@ -320,6 +338,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+          if (inlinePad)
+            SizedBox(
+              height: keypadBar,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(gap, 0, gap, gap),
+                child: InlineKeypad(code: _code),
+              ),
+            ),
         ],
       ),
     );

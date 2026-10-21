@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../browse.dart';
 import '../plex_client.dart';
+import '../settings.dart';
+import 'pin.dart';
 import 'theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -32,6 +34,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _token = TextEditingController(text: s.plexToken);
     _lib = TextEditingController(text: s.musicLibrary);
     _ollama = TextEditingController(text: s.ollamaUrl);
+  }
+
+  List<PlexPlayer> _players = [];
+  bool _scanning = false;
+
+  /// Found players, plus the saved one even if it's offline right now.
+  List<PlexPlayer> _playerChoices(Settings s) => [
+        ..._players,
+        if (s.outputId.isNotEmpty && !_players.any((p) => p.id == s.outputId))
+          PlexPlayer(s.outputId, s.outputName, 'Not found right now', s.outputUris),
+      ];
+
+  Future<void> _findPlayers() async {
+    setState(() => _scanning = true);
+    final found = await AppScope.of(context).library.client.players();
+    if (!mounted) return;
+    setState(() {
+      _players = found;
+      _scanning = false;
+    });
+    if (found.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No Plex players found')));
+    }
+  }
+
+  Future<void> _chooseOutput(String id) async {
+    final app = AppScope.of(context);
+    final p = _playerChoices(app.settings).where((p) => p.id == id).firstOrNull;
+    await app.settings.setOutput(id, p?.name ?? '', p?.uris ?? const []);
+    await app.jukebox.applyOutputSetting();
   }
 
   Future<void> _loadModels() async {
@@ -260,7 +292,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onSelected: (_) => s.autoSyncHours = h,
                   ),
               ]),
+              _section('OUTPUT'),
+              const Text('Play music on', style: TextStyle(fontSize: 18)),
+              const SizedBox(height: 4),
+              RadioGroup<String>(
+                groupValue: s.outputId,
+                onChanged: (id) => _chooseOutput(id ?? ''),
+                child: Column(children: [
+                  const RadioListTile<String>(
+                    contentPadding: EdgeInsets.zero,
+                    value: '',
+                    title: Text('This device', style: TextStyle(fontSize: 18)),
+                    subtitle: Text('Speakers or whatever this device is plugged into'),
+                  ),
+                  for (final p in _playerChoices(s))
+                    RadioListTile<String>(
+                      contentPadding: EdgeInsets.zero,
+                      value: p.id,
+                      title: Text(p.name, style: const TextStyle(fontSize: 18)),
+                      subtitle: Text(p.product.isEmpty ? 'Plex player' : p.product),
+                    ),
+                ]),
+              ),
+              Row(children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+                  onPressed: _scanning ? null : _findPlayers,
+                  icon: const Icon(Icons.cast),
+                  label: Text(_scanning ? 'Searching…' : 'Find Plex players'),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                      'Open Plex on the TV or streamer first. It must be signed in to the same Plex account '
+                      'and allowed to be controlled remotely ("Advertise as player").',
+                      style: TextStyle(color: Jb.chrome)),
+                ),
+              ]),
+              if (app.jukebox.outputError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(app.jukebox.outputError!, style: const TextStyle(color: Colors.redAccent)),
+                ),
+              _section('SECURITY'),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Settings PIN', style: TextStyle(fontSize: 18)),
+                subtitle: Text(s.adminPin.isEmpty
+                    ? 'Off — anyone can open Settings'
+                    : 'On — the PIN is needed to open Settings'),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
+                    onPressed: () async {
+                      final pin = await chooseNewPin(context);
+                      if (pin != null) s.adminPin = pin;
+                    },
+                    child: Text(s.adminPin.isEmpty ? 'Set PIN' : 'Change PIN'),
+                  ),
+                  if (s.adminPin.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    TextButton(onPressed: () => s.adminPin = '', child: const Text('Remove')),
+                  ],
+                ]),
+              ),
               _section('DISPLAY'),
+              _switch('Show number keypad under the A–Z bar', s.showInlineKeypad, (v) => s.showInlineKeypad = v,
+                  sub: 'Enter album + track codes without opening the pop-up keypad'),
               _stepper('Album cards per screen', s.cardsPerPage, 2, 6, (v) => s.cardsPerPage = v),
               _section('CATALOGUE NUMBERING'),
               _stepper('Releases with fewer tracks than this count as singles', s.albumMinTracks, 2, 8,
