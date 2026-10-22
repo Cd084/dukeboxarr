@@ -2,7 +2,7 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
-## Unreleased
+## 0.10.1 — 2026-10-21
 
 - **Plex Home users:** Settings → Switch user lists your Home users (asking for a PIN where one is set). DukeBoxarr then browses and plays as that user, so restrictions and play history follow them. The account sign-in is kept, so switching doesn't need a new sign-in.
 
