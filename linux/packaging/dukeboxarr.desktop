@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=DukeBoxarr
+GenericName=Jukebox
+Comment=Touch-screen jukebox for your Plex music library
+Exec=/opt/dukeboxarr/dukeboxarr
+Icon=dukeboxarr
+Terminal=false
+Categories=AudioVideo;Audio;Player;
+Keywords=jukebox;plex;music;
+StartupWMClass=ca.dukebox.dukebox

@@ -2,7 +2,7 @@
 
 An old-school touch-screen jukebox for a Plex music library. Browse album "title strips", tap a song or punch in its number, and it joins the queue. When the queue runs dry, an AI DJ, or genre-matched random play, keeps the music going.
 
-It's built with Flutter. Windows is supported now; Android, Linux and iOS are planned. It's designed for a touch-screen laptop or a tablet connected to an amp.
+It's built with Flutter. Windows and Ubuntu are supported now; Android and iOS are planned. It's designed for a touch-screen laptop or a tablet connected to an amp.
 
 ---
 
@@ -210,6 +210,16 @@ flutter test                         # unit tests
 - To **update**, run a newer installer. It closes DukeBoxarr if it's running and upgrades in place.
 - Uninstall from Windows Settings → Apps. Settings, the library cache and album numbers are kept.
 
+**Install on Ubuntu 24.04 (or newer):**
+
+```sh
+sudo apt install ./dukeboxarr_<version>_amd64.deb
+```
+- It installs to `/opt/dukeboxarr`, adds **DukeBoxarr** to the app menu, and adds a `dukeboxarr` command.
+- apt pulls in the audio library (`libmpv2`).
+- To **update**, install a newer .deb the same way. To remove it: `sudo apt remove dukeboxarr`.
+- Settings and the library cache live in `~/.local/share/ca.dukebox.dukebox/`.
+
 **Make a release:**
 1. Bump `version:` in `pubspec.yaml`.
    - Use `X.Y.Z+build` and raise the build number every release.
@@ -221,6 +231,14 @@ flutter test                         # unit tests
    ```
    This builds the release, bundles the Visual C++ runtime DLLs, and writes `installer\Output\DukeBoxarr-Setup-<version>.exe`.
 4. Commit, then tag: `git tag vX.Y.Z` and `git push --tags`.
+   - Pushing the tag starts the **Release** GitHub Action.
+   - It builds the Windows installer and the Ubuntu .deb on GitHub's machines and attaches both to the GitHub Release for that tag.
+   - 0.x versions are marked as pre-releases.
+
+**Build the Ubuntu .deb yourself:**
+- On Ubuntu 24.04: `./tool/build_linux.sh` (the required packages are listed at the top of the script).
+- From Windows: `.\tool\build_linux_wsl.ps1`, which builds inside an `Ubuntu-24.04` WSL distro.
+- The .deb is written to `installer/Output/`.
 
 There's an optional live test of the AI DJ against your own Ollama and cached library:
 
@@ -240,4 +258,7 @@ flutter test test/ai_dj_live_test.dart
 | `lib/settings.dart` | All settings and their defaults |
 | `lib/ui/` | Screens: grid, cards, keypad, search, playlists, queue, settings, PIN |
 | `installer/dukeboxarr.iss` | Inno Setup installer script |
-| `tool/build_installer.ps1` | Builds the release and the installer |
+| `tool/build_installer.ps1` | Builds the Windows release and installer |
+| `tool/build_linux.sh` / `build_linux_wsl.ps1` | Builds the Ubuntu .deb (on Linux, or via WSL from Windows) |
+| `linux/packaging/` | Linux menu entry and icon |
+| `.github/workflows/release.yml` | Builds both installers for each release tag |

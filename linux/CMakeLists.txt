@@ -4,9 +4,10 @@ project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
-set(BINARY_NAME "dukebox")
+set(BINARY_NAME "dukeboxarr")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
+# Kept from the original name: it sets the data folder (~/.local/share/<id>).
 set(APPLICATION_ID "ca.dukebox.dukebox")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
