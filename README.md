@@ -202,6 +202,26 @@ flutter build windows --release      # build to build\windows\x64\runner\Release
 flutter test                         # unit tests
 ```
 
+### Installing and releasing
+
+**Install on Windows:** run `DukeBoxarr-Setup-<version>.exe`.
+- It installs for the current user without an admin prompt, into `%LOCALAPPDATA%\Programs\DukeBoxarr`.
+- It adds a Start Menu shortcut, plus a desktop shortcut if you tick it.
+- To **update**, run a newer installer. It closes DukeBoxarr if it's running and upgrades in place.
+- Uninstall from Windows Settings → Apps. Settings, the library cache and album numbers are kept.
+
+**Make a release:**
+1. Bump `version:` in `pubspec.yaml`.
+   - Use `X.Y.Z+build` and raise the build number every release.
+   - The version appears in Settings → About, in the .exe's file properties, in the installer and in Plex.
+2. Add an entry to `CHANGELOG.md`.
+3. Build:
+   ```powershell
+   .\tool\build_installer.ps1     # needs Inno Setup 6: winget install JRSoftware.InnoSetup
+   ```
+   This builds the release, bundles the Visual C++ runtime DLLs, and writes `installer\Output\DukeBoxarr-Setup-<version>.exe`.
+4. Commit, then tag: `git tag vX.Y.Z` and `git push --tags`.
+
 There's an optional live test of the AI DJ against your own Ollama and cached library:
 
 ```powershell
@@ -219,3 +239,5 @@ flutter test test/ai_dj_live_test.dart
 | `lib/output.dart` | Outputs: this device (media_kit) and remote Plex player |
 | `lib/settings.dart` | All settings and their defaults |
 | `lib/ui/` | Screens: grid, cards, keypad, search, playlists, queue, settings, PIN |
+| `installer/dukeboxarr.iss` | Inno Setup installer script |
+| `tool/build_installer.ps1` | Builds the release and the installer |

@@ -29,10 +29,13 @@ class PlexClient {
       : baseUrl = url.replaceAll(RegExp(r'/+$'), ''),
         _http = client ?? http.Client();
 
+  /// App version, from pubspec.yaml; set at start-up in main().
+  static String appVersion = '0.0.0';
+
   /// How this device appears in Plex (Dashboard, Tautulli, Authorized Devices).
-  static final Map<String, String> device = {
+  static Map<String, String> get device => {
     'X-Plex-Product': 'DukeBoxarr',
-    'X-Plex-Version': '1.0',
+    'X-Plex-Version': appVersion,
     'X-Plex-Device': 'DukeBoxarr',
     // Header values must be ASCII.
     'X-Plex-Device-Name': 'DukeBoxarr (${Platform.localHostname.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
