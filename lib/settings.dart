@@ -66,10 +66,38 @@ class Settings extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// The token you signed in with (your Plex account). Kept so you can switch
+  /// between Plex Home users without signing in again. Older installs only
+  /// had plexToken, which was the account token.
+  String get plexAccountToken => _p.getString('plexAccountToken') ?? plexToken;
+
+  /// The Plex Home user DukeBoxarr acts as; empty = the signed-in account.
+  String get plexUserTitle => _p.getString('plexUserTitle') ?? '';
+  String get plexUserUuid => _p.getString('plexUserUuid') ?? '';
+
+  /// Saves the server and the token you signed in with. Resets any
+  /// switched Home user back to the account itself.
   Future<void> setPlex(String url, String token, String library) async {
+    final t = token.trim();
     await _p.setString('plexUrl', url.trim());
-    await _p.setString('plexToken', token.trim());
+    if (t != plexAccountToken) {
+      // A new sign-in: start as the account itself.
+      await _p.setString('plexAccountToken', t);
+      await _p.remove('plexUserTitle');
+      await _p.remove('plexUserUuid');
+      await _p.setString('plexToken', t);
+    } else if (plexUserUuid.isEmpty) {
+      await _p.setString('plexToken', t);
+    } // else: same sign-in, keep the switched Home user's server token
     await _set('musicLibrary', library.trim());
+  }
+
+  /// Acts as a Plex Home user from now on, using [serverToken] for the server.
+  Future<void> setPlexUser(String title, String uuid, String serverToken) async {
+    if (_p.getString('plexAccountToken') == null) await _p.setString('plexAccountToken', plexToken);
+    await _p.setString('plexUserTitle', title);
+    await _p.setString('plexUserUuid', uuid);
+    await _set('plexToken', serverToken);
   }
 
   set allowDelete(bool v) => _set('allowDelete', v);

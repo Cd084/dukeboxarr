@@ -18,6 +18,23 @@ class PlexPlayer {
   const PlexPlayer(this.id, this.name, this.product, this.uris);
 }
 
+class PlexHomeUser {
+  final String uuid;
+  final String title;
+  final String? thumb; // full https URL on plex.tv
+  final bool admin;
+  final bool protected; // needs a PIN to switch to
+  final bool restricted; // managed user with content restrictions
+  const PlexHomeUser({
+    required this.uuid,
+    required this.title,
+    this.thumb,
+    this.admin = false,
+    this.protected = false,
+    this.restricted = false,
+  });
+}
+
 /// Minimal Plex Media Server + plex.tv client.
 class PlexClient {
   final String baseUrl;
@@ -184,6 +201,56 @@ class PlexClient {
     if (thumb == null) return null;
     final t = Uri.encodeComponent(thumb);
     return '$baseUrl/photo/:/transcode?width=$size&height=$size&minSize=1&url=$t&X-Plex-Token=$token';
+  }
+
+  // ---- Plex Home users (switch user, like the Plex apps) ----
+
+  /// Home users on the signed-in account. Needs the account (plex.tv) token.
+  static Future<List<PlexHomeUser>> homeUsers(String clientId, String accountToken) async {
+    final res = await http
+        .get(Uri.parse('https://plex.tv/api/v2/home/users'), headers: headers(clientId, accountToken))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) {
+      throw PlexException('Could not list Plex Home users (${res.statusCode}). Sign in with Plex first.');
+    }
+    return [
+      for (final u in (jsonDecode(res.body)['users'] as List? ?? const []))
+        PlexHomeUser(
+          uuid: u['uuid'] as String,
+          title: (u['title'] ?? u['username'] ?? 'User') as String,
+          thumb: u['thumb'] as String?,
+          admin: u['admin'] == true,
+          protected: u['protected'] == true,
+          restricted: u['restricted'] == true,
+        ),
+    ];
+  }
+
+  /// Switches to a Home user and returns a token for [serverId] (the Plex
+  /// server's machineIdentifier) that acts as that user. The user's own
+  /// plex.tv token isn't accepted by the server; the server access token
+  /// from plex.tv resources is.
+  static Future<String> switchHomeUser(
+      String clientId, String accountToken, String uuid, String serverId, {String? pin}) async {
+    final sw = await http
+        .post(
+            Uri.parse('https://plex.tv/api/v2/home/users/$uuid/switch')
+                .replace(queryParameters: {'pin': ?pin}),
+            headers: headers(clientId, accountToken))
+        .timeout(const Duration(seconds: 15));
+    if (sw.statusCode == 401 || sw.statusCode == 403) throw PlexException('Wrong PIN');
+    if (sw.statusCode >= 300) throw PlexException('Could not switch user (${sw.statusCode})');
+    final userToken = jsonDecode(sw.body)['authToken'] as String?;
+    if (userToken == null) throw PlexException('Plex did not return a token for this user');
+
+    final res = await http
+        .get(Uri.parse('https://plex.tv/api/v2/resources?includeHttps=1'), headers: headers(clientId, userToken))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw PlexException('Could not look up servers for this user (${res.statusCode})');
+    for (final r in (jsonDecode(res.body) as List)) {
+      if (r['clientIdentifier'] == serverId && r['accessToken'] is String) return r['accessToken'] as String;
+    }
+    throw PlexException('This user does not have access to this Plex server');
   }
 
   // ---- plex.tv PIN sign-in (user visits plex.tv/link and enters the code) ----

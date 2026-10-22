@@ -31,9 +31,90 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.didChangeDependencies();
     final s = AppScope.of(context).settings;
     _url = TextEditingController(text: s.plexUrl.isEmpty ? 'http://' : s.plexUrl);
-    _token = TextEditingController(text: s.plexToken);
+    _token = TextEditingController(text: s.plexAccountToken);
     _lib = TextEditingController(text: s.musicLibrary);
     _ollama = TextEditingController(text: s.ollamaUrl);
+  }
+
+  /// Lets you pick a Plex Home user (PIN if they have one), then re-syncs
+  /// the library as that user, since restricted users see less.
+  Future<void> _switchUser() async {
+    final app = AppScope.of(context);
+    final s = app.settings;
+    final messenger = ScaffoldMessenger.of(context);
+    List<PlexHomeUser> users;
+    try {
+      users = await PlexClient.homeUsers(s.clientId, s.plexAccountToken);
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('$e')));
+      return;
+    }
+    if (!mounted) return;
+    final user = await showDialog<PlexHomeUser>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        backgroundColor: Jb.cabinetHi,
+        title: const Text('Play as which Plex user?', style: TextStyle(color: Jb.neon)),
+        children: [
+          for (final u in users)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, u),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              child: Row(children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: Jb.ink,
+                  foregroundImage: u.thumb == null ? null : NetworkImage(u.thumb!),
+                  child: Text(u.title.isEmpty ? '?' : u.title[0].toUpperCase()),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(u.title,
+                      style: TextStyle(
+                          fontSize: 20, color: u.uuid == s.plexUserUuid ? Jb.neon : Colors.white)),
+                ),
+                if (u.admin) const Text('ADMIN  ', style: TextStyle(color: Jb.chrome, fontSize: 12)),
+                if (u.protected) const Icon(Icons.lock, color: Jb.chrome, size: 20),
+              ]),
+            ),
+        ],
+      ),
+    );
+    if (user == null || !mounted) return;
+
+    String? pin;
+    if (user.protected) {
+      pin = await askPin(context, 'PIN for ${user.title}');
+      if (pin == null || !mounted) return;
+    }
+    setState(() {
+      _busy = true;
+      _connMsg = 'Switching to ${user.title}…';
+    });
+    try {
+      var serverId = s.serverId;
+      if (serverId.isEmpty) {
+        serverId = await app.library.client.machineId() ?? '';
+        s.serverId = serverId;
+      }
+      final serverToken =
+          await PlexClient.switchHomeUser(s.clientId, s.plexAccountToken, user.uuid, serverId, pin: pin);
+      // The account's admin user is "no switched user".
+      if (user.admin) {
+        await s.setPlexUser('', '', serverToken);
+      } else {
+        await s.setPlexUser(user.title, user.uuid, serverToken);
+      }
+      _token.text = s.plexAccountToken;
+      app.library.resetClient();
+      setState(() => _connMsg = 'Now playing as ${user.title}. Re-syncing library…');
+      await app.library.sync();
+      if (mounted) setState(() => _connMsg = 'Now playing as ${user.title}.');
+    } catch (e) {
+      if (mounted) setState(() => _connMsg = 'Could not switch user: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   List<PlexPlayer> _players = [];
@@ -215,6 +296,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             '${app.library.songs.length} songs · ${app.library.entries.length} selections'
                                 '${app.library.syncedAt == null ? '' : ' · synced ${app.library.syncedAt.toString().substring(0, 16)}'}',
                     style: TextStyle(color: app.library.error != null ? Colors.redAccent : Jb.chrome),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(minimumSize: const Size(0, 56)),
+                  onPressed: _busy || app.library.loading ? null : _switchUser,
+                  icon: const Icon(Icons.switch_account),
+                  label: const Text('Switch user'),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    s.plexUserTitle.isEmpty
+                        ? 'Playing as the signed-in Plex account'
+                        : 'Playing as Plex Home user: ${s.plexUserTitle}',
+                    style: const TextStyle(color: Jb.chrome),
                   ),
                 ),
               ]),

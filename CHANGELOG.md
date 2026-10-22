@@ -2,6 +2,10 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## Unreleased
+
+- **Plex Home users:** Settings → Switch user lists your Home users (asking for a PIN where one is set). DukeBoxarr then browses and plays as that user, so restrictions and play history follow them. The account sign-in is kept, so switching doesn't need a new sign-in.
+
 ## 0.10.0 — 2026-10-21
 
 - **Ubuntu 24.04+ support:** a .deb package (`tool/build_linux.sh`, or `tool/build_linux_wsl.ps1` from Windows) with an app-menu entry and a `dukeboxarr` command.

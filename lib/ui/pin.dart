@@ -17,6 +17,9 @@ Future<bool> unlockSettings(BuildContext context) async {
       false;
 }
 
+/// Asks for a PIN once (e.g. a Plex Home user's PIN). Null if cancelled.
+Future<String?> askPin(BuildContext context, String title) => _show<String>(context, _PinDialog(title: title));
+
 /// Prompts for a new PIN (entered twice). Returns null if cancelled.
 Future<String?> chooseNewPin(BuildContext context) async {
   final first = await _show<String>(context, const _PinDialog(title: 'New PIN (4–8 digits)'));
