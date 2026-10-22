@@ -110,6 +110,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   KeyEventResult _onKey(FocusNode _, KeyEvent ev, VoidCallback prev, VoidCallback next) {
     if (ev is! KeyDownEvent) return KeyEventResult.ignored;
+    final settings = AppScope.of(context).settings;
+    // F11 toggles full screen, unless Settings are PIN-locked (kiosk use).
+    if (ev.logicalKey == LogicalKeyboardKey.f11) {
+      if (settings.adminPin.isEmpty) settings.fullScreen = !settings.fullScreen;
+      return KeyEventResult.handled;
+    }
     final ch = ev.character;
     if (AppScope.of(context).settings.showInlineKeypad) {
       // Typing goes straight into the on-screen keypad strip.

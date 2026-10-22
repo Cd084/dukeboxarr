@@ -23,7 +23,7 @@ It's built with Flutter. Windows and Ubuntu are supported now; Android and iOS a
   - **Keyboard:** number keys and Enter type codes directly.
 - **Search:** artists (tap to filter the grid), albums (tap to jump), or songs (tap to queue, codes shown).
 - **Genre filter:** narrow the grid to one or more genres. Filtered views keep the albums' real numbers.
-- **Playlists:** your Plex audio playlists, queued in order or shuffled.
+- **Playlists:** your Plex audio playlists, plus those of your other Plex Home users, queued in order or shuffled.
   - Very large playlists (over 200 songs, e.g. "All Music") offer a random 25, 50 or 100 instead.
   - Empty smart playlists are hidden.
 
@@ -90,6 +90,7 @@ Open with the ⚙ button. If a PIN is set, it's asked for first.
 |---|---|
 | Server URL | Your Plex server, e.g. `http://192.168.1.10:32400`. Use the plain `http://` LAN address. |
 | Music library | Name of the Plex music library to use (default `Music`) |
+| Switch user | Play as one of your Plex Home users (asks for their PIN if they have one). Their restrictions and play history apply. |
 | Plex token / Sign in with Plex | Paste a token, or tap **Sign in with Plex** and enter the code shown at **plex.tv/link** |
 | Save & connect | Tests the connection and saves |
 | Re-sync library | Re-reads the whole library from Plex now |
@@ -131,6 +132,8 @@ The last AI error, if any, is shown in this section.
 ### Display
 | Setting | Default | What it does |
 |---|---|---|
+| Full screen | Off | Full-screen window, remembered between launches. **F11** toggles it, unless a Settings PIN is set. |
+| Show other Plex Home users' playlists | On | Lists their playlists under yours on the Playlists screen. PIN-protected users (other than the account owner) are skipped. |
 | Show number keypad under the A–Z bar | Off | Always-visible 0–9 strip with code display, **GO** (show album) and **SELECT** |
 | Album cards per screen | 4 | 2–6. In landscape, 5–6 cards use two rows; in portrait, 3+ cards use two rows. |
 

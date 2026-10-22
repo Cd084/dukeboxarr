@@ -459,6 +459,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
               ),
               _section('DISPLAY'),
+              _switch('Full screen', s.fullScreen, (v) => s.fullScreen = v,
+                  sub: 'F11 also toggles it (unless a Settings PIN is set)'),
+              _switch('Show other Plex Home users\' playlists', s.showSharedPlaylists,
+                  (v) => s.showSharedPlaylists = v,
+                  sub: 'Lists their playlists under yours on the Playlists screen. '
+                      'Users with a Plex PIN (other than the account owner) are skipped.'),
               _switch('Show number keypad under the A–Z bar', s.showInlineKeypad, (v) => s.showInlineKeypad = v,
                   sub: 'Enter album + track codes without opening the pop-up keypad'),
               _stepper('Album cards per screen', s.cardsPerPage, 2, 6, (v) => s.cardsPerPage = v),

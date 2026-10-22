@@ -2,6 +2,11 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## 0.10.2 — 2026-10-22
+
+- **Shared playlists:** the Playlists screen also lists other Plex Home users' playlists, in a section per user. Each playlist is read with its owner's access. This can be turned off in Settings → Display.
+- **Full screen:** Settings → Display → Full screen, remembered between launches. F11 toggles it unless a Settings PIN is set.
+
 ## 0.10.1 — 2026-10-21
 
 - **Plex Home users:** Settings → Switch user lists your Home users (asking for a PIN where one is set). DukeBoxarr then browses and plays as that user, so restrictions and play history follow them. The account sign-in is kept, so switching doesn't need a new sign-in.

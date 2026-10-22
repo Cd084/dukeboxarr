@@ -3,6 +3,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'browse.dart';
+import 'fullscreen.dart';
 import 'jukebox.dart';
 import 'library.dart';
 import 'output.dart';
@@ -15,6 +16,7 @@ import 'ui/theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
+  await initWindow();
   PlexClient.appVersion = (await PackageInfo.fromPlatform()).version;
 
   final settings = await Settings.load();
@@ -24,6 +26,15 @@ Future<void> main() async {
   if (settings.isConfigured) library.init();
   library.startAutoSync();
   if (settings.outputId.isNotEmpty) jukebox.applyOutputSetting();
+
+  // Full screen from the start if set, and whenever the setting changes.
+  var fullScreen = settings.fullScreen;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (fullScreen) applyFullScreen(true);
+  });
+  settings.addListener(() {
+    if (settings.fullScreen != fullScreen) applyFullScreen(fullScreen = settings.fullScreen);
+  });
 
   runApp(AppScope(
     settings: settings,

@@ -111,6 +111,14 @@ class Settings extends ChangeNotifier {
   bool get reportToPlex => _p.getBool('reportToPlex') ?? true;
   set reportToPlex(bool v) => _set('reportToPlex', v);
 
+  /// Also list other Plex Home users' playlists on the Playlists screen.
+  bool get showSharedPlaylists => _p.getBool('showSharedPlaylists') ?? true;
+  set showSharedPlaylists(bool v) => _set('showSharedPlaylists', v);
+
+  /// Full-screen window (F11 toggles it when no Settings PIN is set).
+  bool get fullScreen => _p.getBool('fullScreen') ?? false;
+  set fullScreen(bool v) => _set('fullScreen', v);
+
   /// Settings lock; empty = unlocked.
   String get adminPin => _p.getString('adminPin') ?? '';
   set adminPin(String v) => _set('adminPin', v);

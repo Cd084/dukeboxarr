@@ -128,6 +128,10 @@ class PlexClient {
   /// Unique id of the server, to notice when the URL points somewhere new.
   Future<String?> machineId() async => (await _get('/identity'))['machineIdentifier'] as String?;
 
+  /// The same server, acting with another user's token (e.g. to read a
+  /// Plex Home user's playlists).
+  PlexClient withToken(String otherToken) => PlexClient(baseUrl, otherToken, clientId, client: _http);
+
   /// Audio playlists: [{ratingKey, title, leafCount, composite, smart, duration}].
   Future<List<Map<String, dynamic>>> playlists() async =>
       ((await _get('/playlists?playlistType=audio'))['Metadata'] as List? ?? const [])
@@ -232,6 +236,17 @@ class PlexClient {
   /// from plex.tv resources is.
   static Future<String> switchHomeUser(
       String clientId, String accountToken, String uuid, String serverId, {String? pin}) async {
+    final cacheKey = '$accountToken|$uuid|$serverId';
+    if (_homeTokens[cacheKey] case final t?) return t;
+    final t = await _switchHomeUser(clientId, accountToken, uuid, serverId, pin);
+    return _homeTokens[cacheKey] = t;
+  }
+
+  /// Server tokens per switched Home user, for this session.
+  static final _homeTokens = <String, String>{};
+
+  static Future<String> _switchHomeUser(
+      String clientId, String accountToken, String uuid, String serverId, String? pin) async {
     final sw = await http
         .post(
             Uri.parse('https://plex.tv/api/v2/home/users/$uuid/switch')
