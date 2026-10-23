@@ -18,45 +18,142 @@ abstract class AudioOutput {
   Stream<Duration> get position;
   Stream<Duration> get duration;
   Future<void> play(Song song, String streamUrl);
+
+  /// Whether [playOverlapped] is supported (song overlap / radio-style segue).
+  bool get supportsOverlap => false;
+
+  /// Starts [song] while the current one is still ending, fading the ending
+  /// song out over [fade]. Outputs without overlap just [play].
+  Future<void> playOverlapped(Song song, String streamUrl, Duration fade) => play(song, streamUrl);
+
   Future<void> togglePause();
   Future<void> stop();
   Future<void> setVolume(double percent);
   Future<void> dispose();
 }
 
-class LocalOutput implements AudioOutput {
-  final mk.Player _p = mk.Player();
+/// Plays on this device with media_kit. For song overlap it runs a second
+/// player: the new song starts on it at full volume while the old player
+/// fades out and is then disposed. The streams always follow the newest
+/// player, so the old one's "completed" never advances the queue twice.
+class LocalOutput extends AudioOutput {
+  mk.Player _p = mk.Player();
+  final _fading = <mk.Player>{};
+  final _subs = <StreamSubscription>[];
+  double _volume = 100;
+
+  final _completed = StreamController<bool>.broadcast();
+  final _errors = StreamController<String>.broadcast();
+  final _playing = StreamController<bool>.broadcast();
+  final _position = StreamController<Duration>.broadcast();
+  final _duration = StreamController<Duration>.broadcast();
+
+  LocalOutput() {
+    _follow(_p);
+  }
+
+  void _follow(mk.Player p) {
+    for (final s in _subs) {
+      s.cancel();
+    }
+    _subs
+      ..clear()
+      ..addAll([
+        p.stream.completed.where((c) => c).listen(_completed.add),
+        p.stream.error.listen(_errors.add),
+        p.stream.playing.listen(_playing.add),
+        p.stream.position.listen(_position.add),
+        p.stream.duration.listen(_duration.add),
+      ]);
+  }
 
   @override
   String get name => 'This device';
   @override
-  Stream<bool> get completed => _p.stream.completed.where((c) => c);
+  Stream<bool> get completed => _completed.stream;
   @override
-  Stream<String> get errors => _p.stream.error;
+  Stream<String> get errors => _errors.stream;
   @override
-  Stream<bool> get playing => _p.stream.playing;
+  Stream<bool> get playing => _playing.stream;
   @override
-  Stream<Duration> get position => _p.stream.position;
+  Stream<Duration> get position => _position.stream;
   @override
-  Stream<Duration> get duration => _p.stream.duration;
+  Stream<Duration> get duration => _duration.stream;
 
   @override
   Future<void> play(Song song, String streamUrl) => _p.open(mk.Media(streamUrl), play: true);
+
   @override
-  Future<void> togglePause() => _p.playOrPause();
+  bool get supportsOverlap => true;
+
   @override
-  Future<void> stop() => _p.stop();
+  Future<void> playOverlapped(Song song, String streamUrl, Duration fade) async {
+    final old = _p;
+    final next = mk.Player();
+    await next.setVolume(_volume);
+    _p = next;
+    _follow(next);
+    await next.open(mk.Media(streamUrl), play: true);
+    _fadeOut(old, fade);
+  }
+
+  /// Fades a player out (eased, so the end isn't abrupt), then disposes it.
+  Future<void> _fadeOut(mk.Player p, Duration fade) async {
+    _fading.add(p);
+    const steps = 25;
+    for (var i = 1; i <= steps && _fading.contains(p); i++) {
+      await Future.delayed(fade ~/ steps);
+      final left = 1 - i / steps;
+      if (_fading.contains(p)) await p.setVolume(_volume * left * left);
+    }
+    if (_fading.remove(p)) await p.dispose();
+  }
+
+  Future<void> _stopFading() async {
+    final players = _fading.toList();
+    _fading.clear();
+    for (final p in players) {
+      await p.dispose();
+    }
+  }
+
   @override
-  Future<void> setVolume(double percent) => _p.setVolume(percent);
+  Future<void> togglePause() async {
+    // Pausing mid-overlap: drop the ending song rather than leave it hanging.
+    await _stopFading();
+    await _p.playOrPause();
+  }
+
   @override
-  Future<void> dispose() => _p.dispose();
+  Future<void> stop() async {
+    await _stopFading();
+    await _p.stop();
+  }
+
+  @override
+  Future<void> setVolume(double percent) {
+    _volume = percent;
+    return _p.setVolume(percent);
+  }
+
+  @override
+  Future<void> dispose() async {
+    for (final s in _subs) {
+      await s.cancel();
+    }
+    await _stopFading();
+    await _p.dispose();
+    for (final c in [_completed, _errors, _playing, _position, _duration]) {
+      await c.close();
+    }
+  }
 }
 
 /// Plays on a Plex player (TV app, streamer, Plexamp) via the Plex remote
 /// control API. DukeBoxarr stays in charge of the queue: each song is sent as a
 /// one-song play queue, and the player's timeline is polled to know when it
 /// has finished.
-class PlexRemoteOutput implements AudioOutput {
+class PlexRemoteOutput extends AudioOutput {
   final PlexClient server;
   final String serverId; // machineIdentifier of the Plex server
   final PlexPlayer player;

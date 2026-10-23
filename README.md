@@ -29,6 +29,7 @@ It's built with Flutter. It runs on Windows, Ubuntu and Android 15+; iOS is plan
 
 ### The queue
 - **First come, first served.** A request never interrupts the current song; it plays when that song ends.
+- **Song overlap** (optional): songs blend into each other like on the radio. The next one starts a few seconds early while the ending song fades out.
 - **No duplicates:** a song can't be queued twice, or while it's playing.
 - **Next up:** the now-playing bar shows the next song, labelled *AI pick* or *random* when it isn't a request.
 - **Queue screen:** the current song, the requests, then the lined-up AI or random picks. Each request has **BUMP** (make it play next) and **remove**, if allowed in Settings.
@@ -102,6 +103,7 @@ Open with the ⚙ button. If a PIN is set, it's asked for first.
 | Allow skipping the current song | On | Shows the skip button |
 | Allow bumping a queued song to the top | On | Shows **BUMP** in the queue |
 | Random play when the queue is empty | On | Keeps music playing when nothing is requested |
+| Song overlap (seconds) | 0 (off) | 0–12. The next song starts this long before the current one ends, while the ending song fades out, radio-style. 2–3 s is a good start. Applies when playing on this device; Plex players use their own crossfade. Skipping still cuts straight away. |
 
 ### AI DJ (Ollama)
 | Setting | Default | What it does |

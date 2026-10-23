@@ -325,6 +325,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _switch('Allow bumping a queued song to the top', s.allowBump, (v) => s.allowBump = v),
               _switch('Random play when the queue is empty', s.randomWhenEmpty, (v) => s.randomWhenEmpty = v,
                   sub: 'Picks songs matching the genres of recently played tracks'),
+              _stepper('Song overlap (seconds)', s.overlapSeconds, 0, 12, (v) => s.overlapSeconds = v),
+              const Text(
+                  'The next song starts this many seconds before the current one ends, while the ending song '
+                  'fades out, like radio. 0 = off; 2–3 s is a good start. Applies when playing on this device '
+                  '(Plex players use their own crossfade setting). Skipping still cuts straight away.',
+                  style: TextStyle(color: Jb.chrome)),
               _section('AI DJ (OLLAMA)'),
               _switch('Use AI for random play', s.aiEnabled, (v) => s.aiEnabled = v,
                   sub: 'An AI model picks songs that fit what people requested recently. '

@@ -78,7 +78,10 @@ class Jukebox extends ChangeNotifier {
         if (p != playing) _report(p ? 'playing' : 'paused');
         _update(() => playing = p);
       }),
-      output.position.listen((p) => progress.value = (p, progress.value.$2)),
+      output.position.listen((p) {
+        progress.value = (p, progress.value.$2);
+        _maybeOverlap();
+      }),
       output.duration.listen((d) => progress.value = (progress.value.$1, d)),
     ]);
   }
@@ -159,17 +162,13 @@ class Jukebox extends ChangeNotifier {
 
   /// Advances to the next requested track, or a random/AI one.
   /// [finished] is true when the current song played to its end.
-  Future<void> next({bool finished = false}) async {
+  /// [overlap] starts the next song while the current one fades out over
+  /// that time; if nothing is lined up, the current song just plays on.
+  Future<void> next({bool finished = false, Duration? overlap}) async {
+    final item = _takeNext();
+    if (overlap != null && item == null) return;
+    _overlappedFrom = null;
     if (current case final prev?) _report('stopped', song: prev.song, finished: finished);
-    QueueItem? item;
-    if (queue.isNotEmpty) {
-      item = queue.removeAt(0);
-    } else if (settings.randomWhenEmpty) {
-      final recent = _recentKeys();
-      // Drop look-ahead picks that have since been played.
-      upcoming.removeWhere((u) => recent.contains(u.song.key));
-      item = upcoming.isNotEmpty ? upcoming.removeAt(0) : _randomItem();
-    }
     current = item;
     progress.value = (Duration.zero, Duration.zero);
     notifyListeners();
@@ -179,8 +178,38 @@ class Jukebox extends ChangeNotifier {
     }
     _remember(item);
     _refillIfNeeded();
-    await output.play(item.song, library.client.streamUrl(item.song.partKey));
+    final url = library.client.streamUrl(item.song.partKey);
+    if (overlap != null && output.supportsOverlap) {
+      await output.playOverlapped(item.song, url, overlap);
+    } else {
+      await output.play(item.song, url);
+    }
     _report('playing');
+  }
+
+  QueueItem? _takeNext() {
+    if (queue.isNotEmpty) return queue.removeAt(0);
+    if (!settings.randomWhenEmpty) return null;
+    final recent = _recentKeys();
+    // Drop look-ahead picks that have since been played.
+    upcoming.removeWhere((u) => recent.contains(u.song.key));
+    return upcoming.isNotEmpty ? upcoming.removeAt(0) : _randomItem();
+  }
+
+  /// Song overlap (Settings): when the current song is within the overlap
+  /// time of its end, start the next one so they play together briefly.
+  String? _overlappedFrom; // song key the overlap already fired for
+  void _maybeOverlap() {
+    final secs = settings.overlapSeconds;
+    final cur = current;
+    if (secs <= 0 || cur == null || !playing || !output.supportsOverlap) return;
+    final (pos, dur) = progress.value;
+    final overlap = Duration(seconds: secs);
+    // Skip very short tracks, and wait until we're inside the overlap window.
+    if (dur < overlap * 3 || dur - pos > overlap || pos == Duration.zero) return;
+    if (_overlappedFrom == cur.song.key) return;
+    _overlappedFrom = cur.song.key;
+    next(finished: true, overlap: overlap);
   }
 
   /// Set when a remote player failed and playback moved back to this device.

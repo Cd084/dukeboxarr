@@ -115,6 +115,11 @@ class Settings extends ChangeNotifier {
   bool get showSharedPlaylists => _p.getBool('showSharedPlaylists') ?? true;
   set showSharedPlaylists(bool v) => _set('showSharedPlaylists', v);
 
+  /// Song overlap: start the next song this many seconds before the current
+  /// one ends, fading the ending song out (0 = off). Local playback only.
+  int get overlapSeconds => _p.getInt('overlapSeconds') ?? 0;
+  set overlapSeconds(int v) => _set('overlapSeconds', v);
+
   /// Stop the screen (and the PC) going to sleep while DukeBoxarr is open.
   bool get keepScreenOn => _p.getBool('keepScreenOn') ?? true;
   set keepScreenOn(bool v) => _set('keepScreenOn', v);

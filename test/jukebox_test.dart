@@ -8,23 +8,38 @@ import 'package:dukebox/settings.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FakeOutput implements AudioOutput {
+class FakeOutput extends AudioOutput {
   final played = <String>[];
+  final overlapped = <String>[];
   final _done = StreamController<bool>.broadcast();
+  final _playing = StreamController<bool>.broadcast();
+  final _position = StreamController<Duration>.broadcast();
+  final _duration = StreamController<Duration>.broadcast();
   void finish() => _done.add(true);
+
+  /// Simulates playback progress of the current song.
+  void tick(Duration pos, Duration dur) {
+    _playing.add(true);
+    _duration.add(dur);
+    _position.add(pos);
+  }
 
   @override
   Stream<bool> get completed => _done.stream;
   @override
   Stream<String> get errors => const Stream.empty();
   @override
-  Stream<bool> get playing => const Stream.empty();
+  Stream<bool> get playing => _playing.stream;
   @override
-  Stream<Duration> get position => const Stream.empty();
+  Stream<Duration> get position => _position.stream;
   @override
-  Stream<Duration> get duration => const Stream.empty();
+  Stream<Duration> get duration => _duration.stream;
   @override
   Future<void> play(Song song, String url) async => played.add(url);
+  @override
+  bool get supportsOverlap => true;
+  @override
+  Future<void> playOverlapped(Song song, String url, Duration fade) async => overlapped.add(song.key);
   @override
   String get name => 'fake';
   @override
@@ -83,5 +98,30 @@ void main() {
     out.finish();
     await pumpEventQueue();
     expect(jb.current?.song.key, '5');
+  });
+
+  test('song overlap starts the next song before the current one ends', () async {
+    jb.settings.overlapSeconds = 2;
+    jb.request(song('1'));
+    jb.request(song('2'));
+    await pumpEventQueue();
+    out.tick(const Duration(seconds: 100), const Duration(seconds: 200));
+    await pumpEventQueue();
+    expect(out.overlapped, isEmpty, reason: 'not yet inside the 2 s window');
+    out.tick(const Duration(milliseconds: 198500), const Duration(seconds: 200));
+    await pumpEventQueue();
+    expect(out.overlapped, ['2']);
+    expect(jb.current?.song.key, '2');
+  });
+
+  test('no overlap when it is off, or when nothing is lined up', () async {
+    jb.settings.randomWhenEmpty = false;
+    jb.request(song('1'));
+    await pumpEventQueue();
+    jb.settings.overlapSeconds = 2;
+    out.tick(const Duration(milliseconds: 198500), const Duration(seconds: 200));
+    await pumpEventQueue();
+    expect(out.overlapped, isEmpty, reason: 'queue empty and random off');
+    expect(jb.current?.song.key, '1', reason: 'the last song keeps playing to its end');
   });
 }
