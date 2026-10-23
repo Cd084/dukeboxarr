@@ -242,7 +242,8 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
    This builds the release, bundles the Visual C++ runtime DLLs, and writes `installer\Output\DukeBoxarr-Setup-<version>.exe`.
 4. Commit, then tag: `git tag vX.Y.Z` and `git push --tags`.
    - Pushing the tag starts the **Release** GitHub Action.
-   - It builds the Windows installer and the Ubuntu .deb on GitHub's machines and attaches both to the GitHub Release for that tag.
+   - It builds the Windows installer, the Ubuntu .deb and the Android APK on GitHub's machines and attaches all three to the GitHub Release for that tag.
+   - The APK is signed with the release key, stored as the `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` repository secrets.
    - 0.x versions are marked as pre-releases.
 
 **Build the Android APK:** `.\tool\build_android.ps1`
@@ -279,4 +280,4 @@ flutter test test/ai_dj_live_test.dart
 | `linux/packaging/` | Linux menu entry and icon |
 | `tool/build_android.ps1` | Builds the signed Android APK |
 | `android/app/proguard-rules.pro` | Stops release-build code shrinking from breaking plugins |
-| `.github/workflows/release.yml` | Builds both installers for each release tag |
+| `.github/workflows/release.yml` | Builds all three installers for each release tag |
