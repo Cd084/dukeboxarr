@@ -2,7 +2,7 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
-## Unreleased
+## 0.12.0 — 2026-10-23
 
 - **Song overlap** (Settings → Queue): 0–12 seconds, off by default. The next song starts that long before the current one ends, while the ending song fades out, radio-style. Applies when playing on this device; skipping still cuts straight away.
 - The Android APK is now built and signed by the release workflow and attached to each release.
