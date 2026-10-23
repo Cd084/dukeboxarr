@@ -1,6 +1,10 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import 'browse.dart';
 import 'fullscreen.dart';
@@ -18,6 +22,12 @@ Future<void> main() async {
   MediaKit.ensureInitialized();
   await initWindow();
   PlexClient.appVersion = (await PackageInfo.fromPlatform()).version;
+  if (Platform.isAndroid) {
+    final a = await DeviceInfoPlugin().androidInfo;
+    PlexClient.deviceLabel = a.model.toLowerCase().startsWith(a.manufacturer.toLowerCase())
+        ? a.model
+        : '${a.manufacturer} ${a.model}';
+  }
 
   final settings = await Settings.load();
   final library = Library(settings);
@@ -34,6 +44,13 @@ Future<void> main() async {
   });
   settings.addListener(() {
     if (settings.fullScreen != fullScreen) applyFullScreen(fullScreen = settings.fullScreen);
+  });
+
+  // Keep the screen awake while the jukebox is open (setting, default on).
+  var keepOn = settings.keepScreenOn;
+  WakelockPlus.toggle(enable: keepOn);
+  settings.addListener(() {
+    if (settings.keepScreenOn != keepOn) WakelockPlus.toggle(enable: keepOn = settings.keepScreenOn);
   });
 
   runApp(AppScope(

@@ -2,7 +2,7 @@
 
 An old-school touch-screen jukebox for a Plex music library. Browse album "title strips", tap a song or punch in its number, and it joins the queue. When the queue runs dry, an AI DJ, or genre-matched random play, keeps the music going.
 
-It's built with Flutter. Windows and Ubuntu are supported now; Android and iOS are planned. It's designed for a touch-screen laptop or a tablet connected to an amp.
+It's built with Flutter. It runs on Windows, Ubuntu and Android 15+; iOS is planned. It's designed for a touch-screen laptop or a tablet connected to an amp.
 
 ---
 
@@ -223,6 +223,13 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
 - To **update**, install a newer .deb the same way. To remove it: `sudo apt remove dukeboxarr`.
 - Settings and the library cache live in `~/.local/share/ca.dukebox.dukebox/`.
 
+**Install on Android 15 (or newer):**
+- Copy `DukeBoxarr-<version>.apk` to the tablet and open it.
+- Android asks you to allow installing apps from that source (e.g. Files or your browser) the first time.
+- To **update**, install a newer APK the same way. Settings and the library are kept.
+- **Keep the screen on** (Settings → Display, on by default) stops the tablet sleeping while DukeBoxarr is open.
+- **Full screen** hides Android's status and navigation bars.
+
 **Make a release:**
 1. Bump `version:` in `pubspec.yaml`.
    - Use `X.Y.Z+build` and raise the build number every release.
@@ -237,6 +244,12 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
    - Pushing the tag starts the **Release** GitHub Action.
    - It builds the Windows installer and the Ubuntu .deb on GitHub's machines and attaches both to the GitHub Release for that tag.
    - 0.x versions are marked as pre-releases.
+
+**Build the Android APK:** `.\tool\build_android.ps1`
+- It writes `installer\Output\DukeBoxarr-<version>.apk`.
+- It needs the Android SDK and JDK 17+ (`flutter doctor` checks both).
+- It signs with the release key from `android\key.properties`, a file kept out of git.
+- **Keep that key safe:** Android only installs an update over an existing copy if both are signed with the same key.
 
 **Build the Ubuntu .deb yourself:**
 - On Ubuntu 24.04: `./tool/build_linux.sh` (the required packages are listed at the top of the script).
@@ -264,4 +277,6 @@ flutter test test/ai_dj_live_test.dart
 | `tool/build_installer.ps1` | Builds the Windows release and installer |
 | `tool/build_linux.sh` / `build_linux_wsl.ps1` | Builds the Ubuntu .deb (on Linux, or via WSL from Windows) |
 | `linux/packaging/` | Linux menu entry and icon |
+| `tool/build_android.ps1` | Builds the signed Android APK |
+| `android/app/proguard-rules.pro` | Stops release-build code shrinking from breaking plugins |
 | `.github/workflows/release.yml` | Builds both installers for each release tag |

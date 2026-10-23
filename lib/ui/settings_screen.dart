@@ -459,6 +459,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ]),
               ),
               _section('DISPLAY'),
+              _switch('Keep the screen on', s.keepScreenOn, (v) => s.keepScreenOn = v,
+                  sub: 'Stops the screen, and the computer, from going to sleep while DukeBoxarr is open'),
               _switch('Full screen', s.fullScreen, (v) => s.fullScreen = v,
                   sub: 'F11 also toggles it (unless a Settings PIN is set)'),
               _switch('Show other Plex Home users\' playlists', s.showSharedPlaylists,

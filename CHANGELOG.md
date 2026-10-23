@@ -2,6 +2,12 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## 0.11.0 — 2026-10-22
+
+- **Android app (Android 15+):** a signed APK (`tool/build_android.ps1`). Tested on an Android 15 tablet emulator: setup, library sync, browsing and playback.
+- **Keep the screen on** setting (on by default): stops a tablet or PC from sleeping while DukeBoxarr is open.
+- On Android, Plex shows the device as its model name (e.g. "DukeBoxarr (Google Pixel Tablet)").
+
 ## 0.10.2 — 2026-10-22
 
 - **Shared playlists:** the Playlists screen also lists other Plex Home users' playlists, in a section per user. Each playlist is read with its owner's access. This can be turned off in Settings → Display.

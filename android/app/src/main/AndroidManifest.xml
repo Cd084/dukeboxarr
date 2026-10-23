@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Plex, plex.tv, Ollama and Plex players are all reached over the network. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="DukeBoxarr"
+        android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

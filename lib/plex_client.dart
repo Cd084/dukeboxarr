@@ -49,13 +49,17 @@ class PlexClient {
   /// App version, from pubspec.yaml; set at start-up in main().
   static String appVersion = '0.0.0';
 
+  /// This device's name as shown in Plex. The computer name, or on Android
+  /// (where that's always "localhost") the model; set in main().
+  static String deviceLabel = Platform.localHostname;
+
   /// How this device appears in Plex (Dashboard, Tautulli, Authorized Devices).
   static Map<String, String> get device => {
     'X-Plex-Product': 'DukeBoxarr',
     'X-Plex-Version': appVersion,
     'X-Plex-Device': 'DukeBoxarr',
     // Header values must be ASCII.
-    'X-Plex-Device-Name': 'DukeBoxarr (${Platform.localHostname.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
+    'X-Plex-Device-Name': 'DukeBoxarr (${deviceLabel.replaceAll(RegExp(r'[^\x20-\x7E]'), '')})',
     'X-Plex-Platform': switch (Platform.operatingSystem) {
       'windows' => 'Windows',
       'android' => 'Android',

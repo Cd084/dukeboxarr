@@ -115,6 +115,10 @@ class Settings extends ChangeNotifier {
   bool get showSharedPlaylists => _p.getBool('showSharedPlaylists') ?? true;
   set showSharedPlaylists(bool v) => _set('showSharedPlaylists', v);
 
+  /// Stop the screen (and the PC) going to sleep while DukeBoxarr is open.
+  bool get keepScreenOn => _p.getBool('keepScreenOn') ?? true;
+  set keepScreenOn(bool v) => _set('keepScreenOn', v);
+
   /// Full-screen window (F11 toggles it when no Settings PIN is set).
   bool get fullScreen => _p.getBool('fullScreen') ?? false;
   set fullScreen(bool v) => _set('fullScreen', v);
