@@ -23,7 +23,7 @@ jobs:
     name: Ubuntu 24.04 .deb
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -36,7 +36,7 @@ jobs:
             liblzma-dev libstdc++-12-dev libmpv-dev dpkg-dev
       - run: flutter test
       - run: bash tool/build_linux.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: linux-deb
           path: installer/Output/*.deb
@@ -46,7 +46,7 @@ jobs:
     name: Windows installer
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -61,7 +61,7 @@ jobs:
       - run: flutter test
       - run: .\tool\build_installer.ps1
         shell: pwsh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: windows-installer
           path: installer/Output/*.exe
@@ -71,8 +71,8 @@ jobs:
     name: Android APK
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -104,7 +104,7 @@ jobs:
       - name: Remove signing key
         if: always()
         run: rm -f "$RUNNER_TEMP/dukeboxarr.jks" android/key.properties
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: android-apk
           path: installer/Output/*.apk
@@ -116,7 +116,7 @@ jobs:
     needs: [linux, windows, android]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           path: dist
           merge-multiple: true
