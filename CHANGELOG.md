@@ -2,6 +2,10 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## Unreleased
+
+- **iPad / iPhone (iOS 15+):** an unsigned `.ipa` is built for each release, to install by sideloading with SideStore or AltStore. The app is set up to allow plain-http connections to Plex and Ollama on the home network, ask for local-network access, and keep playing in the background. Plex shows the device by its name.
+
 ## 0.12.0 — 2026-10-23
 
 - **Song overlap** (Settings → Queue): 0–12 seconds, off by default. The next song starts that long before the current one ends, while the ending song fades out, radio-style. Applies when playing on this device; skipping still cuts straight away.

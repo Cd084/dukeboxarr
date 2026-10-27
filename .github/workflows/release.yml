@@ -1,4 +1,5 @@
-# Builds the Windows installer, the Ubuntu .deb and the Android APK.
+# Builds the Windows installer, the Ubuntu .deb, the Android APK and an unsigned
+# iOS .ipa (for sideloading).
 # The APK is signed with the key from the ANDROID_KEYSTORE_BASE64 and
 # ANDROID_KEYSTORE_PASSWORD repository secrets.
 # - Push a tag like v1.2.3: builds both and attaches them to that GitHub Release
@@ -110,10 +111,39 @@ jobs:
           path: installer/Output/*.apk
           if-no-files-found: error
 
+  ios:
+    name: iOS / iPadOS (unsigned .ipa)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      # Unsigned on purpose: it's installed by sideloading (SideStore/AltStore),
+      # which signs it with the user's own Apple ID.
+      - run: flutter build ios --release --no-codesign
+      - name: Package the .ipa
+        run: |
+          version=$(sed -nE 's/^version:[[:space:]]*([0-9]+\.[0-9]+\.[0-9]+).*/\1/p' pubspec.yaml)
+          mkdir -p Payload installer/Output
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry "installer/Output/DukeBoxarr-$version.ipa" Payload
+      - uses: actions/upload-artifact@v5
+        with:
+          name: ios-ipa
+          path: installer/Output/*.ipa
+          if-no-files-found: error
+
   release:
     name: Publish to GitHub Release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [linux, windows, android]
+    # The iOS build doesn't block a release: if it fails, the others still publish.
+    if: >-
+      startsWith(github.ref, 'refs/tags/') && !cancelled() &&
+      needs.linux.result == 'success' && needs.windows.result == 'success' &&
+      needs.android.result == 'success'
+    needs: [linux, windows, android, ios]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v6

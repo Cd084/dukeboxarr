@@ -2,7 +2,7 @@
 
 An old-school touch-screen jukebox for a Plex music library. Browse album "title strips", tap a song or punch in its number, and it joins the queue. When the queue runs dry, an AI DJ, or genre-matched random play, keeps the music going.
 
-It's built with Flutter. It runs on Windows, Ubuntu and Android 15+; iOS is planned. It's designed for a touch-screen laptop or a tablet connected to an amp.
+It's built with Flutter. It runs on Windows, Ubuntu, Android 15+ and iPad (by sideloading). It's designed for a touch-screen laptop or a tablet connected to an amp.
 
 ---
 
@@ -232,6 +232,20 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
 - **Keep the screen on** (Settings → Display, on by default) stops the tablet sleeping while DukeBoxarr is open.
 - **Full screen** hides Android's status and navigation bars.
 
+**Install on an iPad or iPhone (iPadOS/iOS 15 or newer), by sideloading:**
+
+DukeBoxarr isn't on the App Store. The release has an unsigned `DukeBoxarr-<version>.ipa`, which you install with **SideStore** (or AltStore) using your own free Apple ID.
+
+1. Set up **SideStore** on the iPad by following its guide at https://sidestore.io. This is a one-time setup and needs a Windows PC or Mac.
+2. On the iPad, download `DukeBoxarr-<version>.ipa` from the GitHub release.
+3. Open SideStore → **My Apps → +**, and pick the downloaded `.ipa`.
+4. Open DukeBoxarr. When iOS asks to **find devices on your local network**, tap **Allow**; it needs this to reach your Plex server.
+
+Things to know:
+- **Refresh every 7 days.** A free Apple ID signs apps for 7 days. Open SideStore and tap **Refresh**; SideStore can also do this in the background. If it lapses, the app won't open until refreshed. Your settings are kept.
+- **Updates:** install the newer `.ipa` the same way. It replaces the old one and keeps your settings.
+- **Free Apple IDs are limited to 3 sideloaded apps** at once, and SideStore counts as one.
+
 **Make a release:**
 1. Bump `version:` in `pubspec.yaml`.
    - Use `X.Y.Z+build` and raise the build number every release.
@@ -244,7 +258,8 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
    This builds the release, bundles the Visual C++ runtime DLLs, and writes `installer\Output\DukeBoxarr-Setup-<version>.exe`.
 4. Commit, then tag: `git tag vX.Y.Z` and `git push --tags`.
    - Pushing the tag starts the **Release** GitHub Action.
-   - It builds the Windows installer, the Ubuntu .deb and the Android APK on GitHub's machines and attaches all three to the GitHub Release for that tag.
+   - It builds the Windows installer, the Ubuntu .deb, the Android APK and the unsigned iOS .ipa on GitHub's machines and attaches them to the GitHub Release for that tag.
+   - If the iOS build fails, the release still goes out with the other three.
    - The APK is signed with the release key, stored as the `ANDROID_KEYSTORE_BASE64` and `ANDROID_KEYSTORE_PASSWORD` repository secrets.
    - 0.x versions are marked as pre-releases.
 
@@ -282,4 +297,4 @@ flutter test test/ai_dj_live_test.dart
 | `linux/packaging/` | Linux menu entry and icon |
 | `tool/build_android.ps1` | Builds the signed Android APK |
 | `android/app/proguard-rules.pro` | Stops release-build code shrinking from breaking plugins |
-| `.github/workflows/release.yml` | Builds all three installers for each release tag |
+| `.github/workflows/release.yml` | Builds the installers for each release tag |

@@ -27,6 +27,10 @@ Future<void> main() async {
     PlexClient.deviceLabel = a.model.toLowerCase().startsWith(a.manufacturer.toLowerCase())
         ? a.model
         : '${a.manufacturer} ${a.model}';
+  } else if (Platform.isIOS) {
+    // iOS 16+ reports a generic name like "iPad" unless the app has a special entitlement.
+    final i = await DeviceInfoPlugin().iosInfo;
+    PlexClient.deviceLabel = i.name.isNotEmpty ? i.name : i.model;
   }
 
   final settings = await Settings.load();
