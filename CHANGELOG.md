@@ -2,6 +2,11 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## Unreleased
+
+- **Android: the stream keeps going with the screen off.** While music plays, DukeBoxarr now holds a wake lock and a Wi-Fi lock (like Plexamp/Spotify), so a real tablet's Wi-Fi no longer dozes and drops the connection to Plex. Both are released when paused or when the queue ends.
+- **Settings → Background playback (Android):** shows whether Android restricts DukeBoxarr's battery use, with an **Allow** button for Android's own prompt to make it unrestricted. It also lists the extra Samsung settings to check.
+
 ## 0.13.0 — 2026-11-15
 
 - **Android: keeps playing with the screen locked.** Playback now runs as a media playback service (audio_service), with a "now playing" notification and play/pause/skip on the lock screen, in the notification shade and from Bluetooth/headset buttons (also on iPad). Android previously cut DukeBoxarr's network in Doze, so songs failed to load and the queue was skipped empty.

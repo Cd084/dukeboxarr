@@ -14,6 +14,7 @@ import 'library.dart';
 import 'media_session.dart';
 import 'output.dart';
 import 'plex_client.dart';
+import 'power.dart';
 import 'settings.dart';
 import 'ui/home.dart';
 import 'ui/settings_screen.dart';
@@ -62,6 +63,14 @@ Future<void> main() async {
       debugPrint('media session unavailable: $e');
     }
   }
+
+  // Android: keep the CPU and Wi-Fi awake while music is playing, so the
+  // stream from Plex survives the screen turning off.
+  var holding = false;
+  jukebox.addListener(() {
+    final want = jukebox.active;
+    if (want != holding) Power.holdForPlayback(holding = want);
+  });
 
   // Full screen from the start if set, and whenever the setting changes.
   var fullScreen = settings.fullScreen;

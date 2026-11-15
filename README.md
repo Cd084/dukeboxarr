@@ -230,6 +230,8 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
 - Android asks you to allow installing apps from that source (e.g. Files or your browser) the first time.
 - To **update**, install a newer APK the same way. Settings and the library are kept.
 - **Keep the screen on** (Settings → Display, on by default) stops the tablet sleeping while DukeBoxarr is open.
+- **Playing with the screen off:** while music plays, DukeBoxarr shows a "now playing" notification with lock-screen controls, and keeps the CPU and Wi-Fi awake so the stream from Plex isn't cut.
+- **Settings → Background playback:** tap **Allow** so Android doesn't restrict DukeBoxarr's battery use. On Samsung tablets, also set Settings → Apps → DukeBoxarr → Battery → **Unrestricted**, and make sure DukeBoxarr isn't in "Sleeping apps".
 - **Full screen** hides Android's status and navigation bars.
 
 **Install on an iPad or iPhone (iPadOS/iOS 15 or newer), by sideloading:**

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../browse.dart';
 import '../plex_client.dart';
+import '../power.dart';
 import '../settings.dart';
 import 'pin.dart';
 import 'theme.dart';
@@ -25,6 +26,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _busy = false;
   String? _pinCode;
   Timer? _pinTimer;
+
+  // Android: whether DukeBoxarr's battery use is unrestricted (null = unknown).
+  bool? _unrestricted;
+  late final AppLifecycleListener _lifecycle = AppLifecycleListener(onResume: _checkBattery);
+
+  @override
+  void initState() {
+    super.initState();
+    if (Power.supported) {
+      _lifecycle; // re-check when coming back from Android's battery prompt
+      _checkBattery();
+    }
+  }
+
+  Future<void> _checkBattery() async {
+    final v = await Power.unrestricted();
+    if (mounted) setState(() => _unrestricted = v);
+  }
 
   @override
   void didChangeDependencies() {
@@ -164,6 +183,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
+    if (Power.supported) _lifecycle.dispose();
     _pinTimer?.cancel();
     _url.dispose();
     _token.dispose();
@@ -442,6 +462,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _switch('Report playback to Plex', s.reportToPlex, (v) => s.reportToPlex = v,
                   sub: 'Shows DukeBoxarr in the Plex Dashboard and Tautulli, and updates play counts. '
                       'Plays count toward the signed-in Plex user. (Plex players report themselves.)'),
+              if (Power.supported) ...[
+                _section('BACKGROUND PLAYBACK'),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Battery use', style: TextStyle(fontSize: 18)),
+                  subtitle: Text(
+                    switch (_unrestricted) {
+                      true => 'Unrestricted: music keeps playing with the screen off.',
+                      false => 'Restricted: Android (or the tablet maker\'s battery saver) may cut the '
+                          'connection to Plex when the screen is off. Tap Allow to fix it.',
+                      null => 'Checking…',
+                    },
+                    style: TextStyle(color: _unrestricted == false ? Colors.redAccent : Jb.chrome),
+                  ),
+                  trailing: _unrestricted == false
+                      ? FilledButton(onPressed: Power.askUnrestricted, child: const Text('ALLOW'))
+                      : const Icon(Icons.check_circle, color: Jb.neon),
+                ),
+                const Text(
+                    'On some tablets (e.g. Samsung) also check Settings → Apps → DukeBoxarr → Battery → '
+                    'Unrestricted, and that DukeBoxarr isn\'t in "Sleeping apps".',
+                    style: TextStyle(color: Jb.chrome)),
+              ],
               _section('SECURITY'),
               ListTile(
                 contentPadding: EdgeInsets.zero,
