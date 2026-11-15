@@ -4,6 +4,9 @@ DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each rele
 
 ## Unreleased
 
+- **Android: keeps playing with the screen locked.** Playback now runs as a media playback service (audio_service), with a "now playing" notification and play/pause/skip on the lock screen, in the notification shade and from Bluetooth/headset buttons (also on iPad). Android previously cut DukeBoxarr's network in Doze, so songs failed to load and the queue was skipped empty.
+- **Network trouble no longer empties the queue:** a song that fails to load is retried 3 times. If Plex can't be reached, playback stops with a message and the queue is kept, with failed requests back in front.
+
 - **iPad / iPhone (iOS 15+):** an unsigned `.ipa` is built for each release, to install by sideloading with SideStore or AltStore. The app is set up to allow plain-http connections to Plex and Ollama on the home network, ask for local-network access, and keep playing in the background. Plex shows the device by its name.
 
 ## 0.12.0 — 2026-10-23

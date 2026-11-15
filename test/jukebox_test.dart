@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dukebox/jukebox.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:dukebox/library.dart';
 import 'package:dukebox/models.dart';
 import 'package:dukebox/output.dart';
@@ -12,6 +13,8 @@ class FakeOutput extends AudioOutput {
   final played = <String>[];
   final overlapped = <String>[];
   final _done = StreamController<bool>.broadcast();
+  final _errors = StreamController<String>.broadcast();
+  void fail() => _errors.add('Failed to open stream');
   final _playing = StreamController<bool>.broadcast();
   final _position = StreamController<Duration>.broadcast();
   final _duration = StreamController<Duration>.broadcast();
@@ -27,7 +30,7 @@ class FakeOutput extends AudioOutput {
   @override
   Stream<bool> get completed => _done.stream;
   @override
-  Stream<String> get errors => const Stream.empty();
+  Stream<String> get errors => _errors.stream;
   @override
   Stream<bool> get playing => _playing.stream;
   @override
@@ -123,5 +126,54 @@ void main() {
     await pumpEventQueue();
     expect(out.overlapped, isEmpty, reason: 'queue empty and random off');
     expect(jb.current?.song.key, '1', reason: 'the last song keeps playing to its end');
+  });
+
+  /// A jukebox built inside fake time, so its retry timers follow async.elapse.
+  (Jukebox, FakeOutput) fakeJukebox(FakeAsync async) {
+    SharedPreferences.setMockInitialValues({'plexUrl': 'http://x', 'plexToken': 't', 'randomWhenEmpty': false});
+    late Settings settings;
+    Settings.load().then((s) => settings = s);
+    async.flushMicrotasks();
+    final lib = Library(settings)..songs = {for (var i = 1; i <= 5; i++) '$i': song('$i')};
+    final out = FakeOutput();
+    return (Jukebox(lib, settings, out), out);
+  }
+
+  test('a failing song is retried, then playback stops without losing the queue', () {
+    fakeAsync((async) {
+      final (jb, out) = fakeJukebox(async);
+      jb.requestAll([song('1'), song('2'), song('3')]);
+      async.flushMicrotasks();
+      expect(jb.current?.song.key, '1');
+
+      // Every load fails, and the player reports two errors per failure (as mpv does).
+      for (var i = 0; i < 12 && jb.current != null; i++) {
+        out.fail();
+        out.fail();
+        async.elapse(const Duration(seconds: 10));
+      }
+      expect(jb.current, isNull, reason: 'stopped instead of skipping through the queue');
+      expect(jb.playbackError, isNotNull);
+      expect(jb.queue.map((q) => q.song.key), ['1', '2', '3'],
+          reason: 'failed requests go back in front, once each; nothing is lost');
+      expect(out.played.where((u) => u.contains('/p/1')).length, 4, reason: 'played once + 3 retries');
+      expect(out.played.where((u) => u.contains('/p/3')), isEmpty, reason: 'gave up before trying song 3');
+    });
+  });
+
+  test('a brief network blip recovers on retry without skipping', () {
+    fakeAsync((async) {
+      final (jb, out) = fakeJukebox(async);
+      jb.requestAll([song('1'), song('2')]);
+      async.flushMicrotasks();
+      out.fail();
+      async.elapse(const Duration(seconds: 3)); // retried
+      expect(out.played.where((u) => u.contains('/p/1')).length, 2);
+      out.tick(const Duration(seconds: 5), const Duration(seconds: 200)); // playing again
+      async.flushMicrotasks();
+      expect(jb.current?.song.key, '1');
+      expect(jb.queue.map((q) => q.song.key), ['2']);
+      expect(jb.playbackError, isNull);
+    });
   });
 }

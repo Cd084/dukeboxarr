@@ -43,7 +43,6 @@ class Jukebox extends ChangeNotifier {
   static const _historyMax = 500;
 
   Map<String, List<Song>>? _genreIndex;
-  int _consecutiveErrors = 0;
   final _subs = <StreamSubscription>[];
 
   Jukebox(this.library, this.settings, this.output) : ai = AiDj(settings, library) {
@@ -80,6 +79,7 @@ class Jukebox extends ChangeNotifier {
       }),
       output.position.listen((p) {
         progress.value = (p, progress.value.$2);
+        if (p > const Duration(seconds: 3)) _playbackHealthy();
         _maybeOverlap();
       }),
       output.duration.listen((d) => progress.value = (progress.value.$1, d)),
@@ -154,11 +154,23 @@ class Jukebox extends ChangeNotifier {
 
   Future<void> togglePause() async {
     if (current == null) {
+      playbackError = null;
+      pausedByUser = false;
       await next();
     } else {
+      pausedByUser = playing;
       await output.togglePause();
     }
   }
+
+  /// True while the user has paused. Between songs the player briefly reports
+  /// "not playing" too; that isn't a pause (see [active]).
+  bool pausedByUser = false;
+
+  /// Music should be playing: a song is current and the user hasn't paused.
+  /// The media session uses this so Android keeps DukeBoxarr in the foreground
+  /// (with network) between songs while the screen is locked.
+  bool get active => current != null && !pausedByUser;
 
   /// Advances to the next requested track, or a random/AI one.
   /// [finished] is true when the current song played to its end.
@@ -168,6 +180,8 @@ class Jukebox extends ChangeNotifier {
     final item = _takeNext();
     if (overlap != null && item == null) return;
     _overlappedFrom = null;
+    _retries = 0;
+    pausedByUser = false;
     if (current case final prev?) _report('stopped', song: prev.song, finished: finished);
     current = item;
     progress.value = (Duration.zero, Duration.zero);
@@ -179,6 +193,7 @@ class Jukebox extends ChangeNotifier {
     _remember(item);
     _refillIfNeeded();
     final url = library.client.streamUrl(item.song.partKey);
+    _attempt++;
     if (overlap != null && output.supportsOverlap) {
       await output.playOverlapped(item.song, url, overlap);
     } else {
@@ -240,12 +255,56 @@ class Jukebox extends ChangeNotifier {
       setOutput(LocalOutput());
       return;
     }
-    if (++_consecutiveErrors > 5) {
+    final cur = current;
+    if (cur == null) return;
+    // The player can report several errors for one failed load; count it once.
+    if (_handledAttempt == _attempt) return;
+    _handledAttempt = _attempt;
+    // A network blip (e.g. Wi-Fi reconnecting): retry the same song first.
+    if (_retries < 3) {
+      _retries++;
+      Future.delayed(Duration(seconds: 2 * _retries), () {
+        if (!identical(current, cur)) return;
+        _attempt++;
+        output.play(cur.song, library.client.streamUrl(cur.song.partKey));
+      });
+      return;
+    }
+    _retries = 0;
+    _failedStreak.add(cur);
+    // One song that won't load may just be a broken file: skip it. Two in a
+    // row means Plex is unreachable: stop and keep the queue, putting the
+    // failed requests back in front, rather than skipping through it.
+    if (_failedStreak.length >= 2) {
+      queue.insertAll(0, _failedStreak.where((q) => !q.random));
+      _failedStreak.clear();
       current = null;
+      playbackError = "Can't reach Plex, so playback stopped. Press play to try again.";
+      progress.value = (Duration.zero, Duration.zero);
+      output.stop();
       notifyListeners();
       return;
     }
     Future.delayed(const Duration(seconds: 1), next);
+  }
+
+  /// Set when playback stopped because songs kept failing to load (e.g. Plex
+  /// unreachable). The queue is kept; pressing play tries again.
+  String? playbackError;
+  int _retries = 0; // retries of the current song
+  int _attempt = 0; // increments with every load of a song (incl. retries)
+  int _handledAttempt = -1; // last attempt whose failure was handled
+  final _failedStreak = <QueueItem>[]; // songs that failed in a row
+
+  /// Called as playback progresses: a few seconds of playing means loading works again.
+  void _playbackHealthy() {
+    if (_retries == 0 && _failedStreak.isEmpty && playbackError == null) return;
+    _retries = 0;
+    _failedStreak.clear();
+    if (playbackError != null) {
+      playbackError = null;
+      notifyListeners();
+    }
   }
 
   void _onSettings() {
@@ -364,7 +423,6 @@ class Jukebox extends ChangeNotifier {
   // --------------------------------------------------------------- history
 
   void _remember(QueueItem item) {
-    _consecutiveErrors = 0;
     _history.insert(0, (key: item.song.key, random: item.random, at: DateTime.now()));
     if (_history.length > _historyMax) _history.removeLast();
     SharedPreferences.getInstance().then((p) => p.setStringList('history2', [

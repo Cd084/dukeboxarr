@@ -1,5 +1,7 @@
 package ca.dukebox.dukebox
 
-import io.flutter.embedding.android.FlutterActivity
+import com.ryanheise.audioservice.AudioServiceActivity
 
-class MainActivity : FlutterActivity()
+// AudioServiceActivity (audio_service) shares the Flutter engine with the
+// background media service, so playback continues while the screen is locked.
+class MainActivity : AudioServiceActivity()

@@ -45,10 +45,16 @@ class NowPlayingBar extends StatelessWidget {
               Expanded(
                 child: cur == null
                     ? Text(
-                        app.settings.randomWhenEmpty
-                            ? 'Make a selection — or press play for random'
-                            : 'Make a selection',
-                        style: const TextStyle(color: Jb.neon, fontSize: 22, fontWeight: FontWeight.w600))
+                        jb.playbackError ??
+                            (app.settings.randomWhenEmpty
+                                ? 'Make a selection — or press play for random'
+                                : 'Make a selection'),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            color: jb.playbackError != null ? Colors.redAccent : Jb.neon,
+                            fontSize: 22,
+                            fontWeight: FontWeight.w600))
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.center,

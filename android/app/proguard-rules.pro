@@ -12,3 +12,6 @@
 # dropped kotlin.Result$Failure). Keep the Kotlin standard library intact.
 -keep class kotlin.** { *; }
 -dontwarn kotlin.**
+
+# audio_service (media playback service, lock-screen controls).
+-keep class com.ryanheise.** { *; }

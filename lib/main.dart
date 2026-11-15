@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
@@ -10,6 +11,7 @@ import 'browse.dart';
 import 'fullscreen.dart';
 import 'jukebox.dart';
 import 'library.dart';
+import 'media_session.dart';
 import 'output.dart';
 import 'plex_client.dart';
 import 'settings.dart';
@@ -40,6 +42,26 @@ Future<void> main() async {
   if (settings.isConfigured) library.init();
   library.startAutoSync();
   if (settings.outputId.isNotEmpty) jukebox.applyOutputSetting();
+
+  // Phones/tablets: a media session keeps playback going with the screen
+  // locked (Android media service) and adds lock-screen controls.
+  if (Platform.isAndroid || Platform.isIOS) {
+    try {
+      await AudioService.init(
+        builder: () => JukeboxAudioHandler(jukebox, settings),
+        config: const AudioServiceConfig(
+          androidNotificationChannelId: 'ca.dukebox.dukebox.playback',
+          androidNotificationChannelName: 'DukeBoxarr playback',
+          // Stay a foreground service while paused too, so Android never cuts the
+          // network mid-queue. (Ongoing notifications require stop-on-pause.)
+          androidNotificationOngoing: false,
+          androidStopForegroundOnPause: false,
+        ),
+      );
+    } catch (e) {
+      debugPrint('media session unavailable: $e');
+    }
+  }
 
   // Full screen from the start if set, and whenever the setting changes.
   var fullScreen = settings.fullScreen;
