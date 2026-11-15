@@ -2,7 +2,7 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
-## Unreleased
+## 0.13.0 — 2026-11-15
 
 - **Android: keeps playing with the screen locked.** Playback now runs as a media playback service (audio_service), with a "now playing" notification and play/pause/skip on the lock screen, in the notification shade and from Bluetooth/headset buttons (also on iPad). Android previously cut DukeBoxarr's network in Doze, so songs failed to load and the queue was skipped empty.
 - **Network trouble no longer empties the queue:** a song that fails to load is retried 3 times. If Plex can't be reached, playback stops with a message and the queue is kept, with failed requests back in front.
