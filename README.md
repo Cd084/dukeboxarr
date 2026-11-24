@@ -2,7 +2,7 @@
 
 An old-school touch-screen jukebox for a Plex music library. Browse album "title strips", tap a song or punch in its number, and it joins the queue. When the queue runs dry, an AI DJ, or genre-matched random play, keeps the music going.
 
-It's built with Flutter. It runs on Windows, Ubuntu, Android 15+ and iPad (by sideloading). It's designed for a touch-screen laptop or a tablet connected to an amp.
+It's built with Flutter. It runs on Windows, Ubuntu, Android 15+ and iPad (by sideloading; the iPad version is untested so far). It's designed for a touch-screen laptop or a tablet connected to an amp.
 
 DukeBoxarr is an independent, free project. It is not affiliated with or endorsed by Plex.
 
@@ -45,6 +45,8 @@ sudo apt install ./dukeboxarr_<version>_amd64.deb
 - **Full screen** hides Android's status and navigation bars.
 
 ### iPad or iPhone (iPadOS/iOS 15 or newer), by sideloading
+
+> **Not tested yet.** The iPad/iPhone version is built automatically but hasn't been tried on a real device. Expect rough edges, and please [report what you find](https://github.com/Cd084/dukeboxarr/issues).
 
 DukeBoxarr isn't on the App Store. The release has an unsigned `DukeBoxarr-<version>.ipa`, which you install with **SideStore** (or AltStore) using your own free Apple ID.
 
