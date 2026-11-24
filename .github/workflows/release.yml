@@ -23,7 +23,7 @@ jobs:
   linux:
     name: Ubuntu 24.04 .deb
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -32,7 +32,7 @@ jobs:
           channel: stable
           cache: true
       - name: Install Linux build dependencies
-        timeout-minutes: 10
+        timeout-minutes: 60  # Ubuntu's mirrors are sometimes very slow; this only catches real hangs
         run: |
           # Skip man-page indexing: on GitHub's Ubuntu 24.04 images it can stall
           # apt for a very long time after installing packages.
