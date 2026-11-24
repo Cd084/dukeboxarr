@@ -34,6 +34,10 @@ jobs:
       - name: Install Linux build dependencies
         timeout-minutes: 10
         run: |
+          # Skip man-page indexing: on GitHub's Ubuntu 24.04 images it can stall
+          # apt for a very long time after installing packages.
+          echo 'set man-db/auto-update false' | sudo debconf-communicate >/dev/null
+          sudo rm -f /var/lib/man-db/auto-update
           # Retry and time out stalled mirror downloads instead of hanging.
           APT='-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30'
           sudo apt-get $APT update
