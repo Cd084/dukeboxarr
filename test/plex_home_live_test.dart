@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 // Live check of Plex Home user switching against a real account/server.
 // Skipped unless DUKEBOX_LIVE=1. Uses the settings saved by the Windows app.
-//   $env:DUKEBOX_LIVE=1; $env:SWITCH_TO='1Family'; flutter test test/plex_home_live_test.dart
+//   $env:DUKEBOX_LIVE=1; $env:SWITCH_TO='<profile name>'; flutter test test/plex_home_live_test.dart
 import 'dart:convert';
 import 'dart:io';
 
@@ -22,7 +22,8 @@ void main() {
 
     final users = await PlexClient.homeUsers(clientId, account);
     print('Home users: ${users.map((u) => '${u.title}${u.protected ? ' (PIN)' : ''}').join(', ')}');
-    final target = users.firstWhere((u) => u.title == (Platform.environment['SWITCH_TO'] ?? '1Family'));
+    final want = Platform.environment['SWITCH_TO'];
+    final target = want == null ? users.firstWhere((u) => !u.admin, orElse: () => users.first) : users.firstWhere((u) => u.title == want);
 
     final token = await PlexClient.switchHomeUser(clientId, account, target.uuid, serverId);
     final sections = await PlexClient(url, token, clientId).musicSections();

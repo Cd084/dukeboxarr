@@ -4,6 +4,60 @@ An old-school touch-screen jukebox for a Plex music library. Browse album "title
 
 It's built with Flutter. It runs on Windows, Ubuntu, Android 15+ and iPad (by sideloading). It's designed for a touch-screen laptop or a tablet connected to an amp.
 
+DukeBoxarr is an independent, free project. It is not affiliated with or endorsed by Plex.
+
+| | |
+|---|---|
+| ![The jukebox: album title strips with track numbers](docs/screenshots/jukebox.png) | ![Punching in a selection code](docs/screenshots/keypad.png) |
+| ![The queue, with bump and remove](docs/screenshots/queue.png) | ![Search across artists, albums and songs](docs/screenshots/search.png) |
+
+---
+
+## Install
+
+Download the file for your device from the [Releases](https://github.com/Cd084/dukeboxarr/releases) page, then follow the steps below. You need a Plex server with a music library.
+
+### Windows
+
+Run `DukeBoxarr-Setup-<version>.exe`.
+- It installs for the current user without an admin prompt, into `%LOCALAPPDATA%\Programs\DukeBoxarr`.
+- It adds a Start Menu shortcut, plus a desktop shortcut if you tick it.
+- To **update**, run a newer installer. It closes DukeBoxarr if it's running and upgrades in place.
+- Uninstall from Windows Settings → Apps. Settings, the library cache and album numbers are kept.
+
+### Ubuntu 24.04 (or newer)
+
+```sh
+sudo apt install ./dukeboxarr_<version>_amd64.deb
+```
+- It installs to `/opt/dukeboxarr`, adds **DukeBoxarr** to the app menu, and adds a `dukeboxarr` command.
+- apt pulls in the audio library (`libmpv2`).
+- To **update**, install a newer .deb the same way. To remove it: `sudo apt remove dukeboxarr`.
+- Settings and the library cache live in `~/.local/share/ca.dukebox.dukebox/`.
+
+### Android 15 (or newer)
+- Copy `DukeBoxarr-<version>.apk` to the tablet and open it.
+- Android asks you to allow installing apps from that source (e.g. Files or your browser) the first time.
+- To **update**, install a newer APK the same way. Settings and the library are kept.
+- **Keep the screen on** (Settings → Display, on by default) stops the tablet sleeping while DukeBoxarr is open.
+- **Playing with the screen off:** while music plays, DukeBoxarr shows a "now playing" notification with lock-screen controls, and keeps the CPU and Wi-Fi awake so the stream from Plex isn't cut.
+- **Settings → Background playback:** tap **Allow** so Android doesn't restrict DukeBoxarr's battery use. On Samsung tablets, also set Settings → Apps → DukeBoxarr → Battery → **Unrestricted**, and make sure DukeBoxarr isn't in "Sleeping apps".
+- **Full screen** hides Android's status and navigation bars.
+
+### iPad or iPhone (iPadOS/iOS 15 or newer), by sideloading
+
+DukeBoxarr isn't on the App Store. The release has an unsigned `DukeBoxarr-<version>.ipa`, which you install with **SideStore** (or AltStore) using your own free Apple ID.
+
+1. Set up **SideStore** on the iPad by following its guide at https://sidestore.io. This is a one-time setup and needs a Windows PC or Mac.
+2. On the iPad, download `DukeBoxarr-<version>.ipa` from the GitHub release.
+3. Open SideStore → **My Apps → +**, and pick the downloaded `.ipa`.
+4. Open DukeBoxarr. When iOS asks to **find devices on your local network**, tap **Allow**; it needs this to reach your Plex server.
+
+Things to know:
+- **Refresh every 7 days.** A free Apple ID signs apps for 7 days. Open SideStore and tap **Refresh**; SideStore can also do this in the background. If it lapses, the app won't open until refreshed. Your settings are kept.
+- **Updates:** install the newer `.ipa` the same way. It replaces the old one and keeps your settings.
+- **Free Apple IDs are limited to 3 sideloaded apps** at once, and SideStore counts as one.
+
 ---
 
 ## Features
@@ -197,6 +251,25 @@ You can compare models on your own library with the live test (see [Building](#b
 
 ---
 
+## Privacy
+
+- DukeBoxarr talks to:
+  - **plex.tv**, for sign-in and Plex Home profiles;
+  - **your Plex server**;
+  - **Plex players** on your network, if you choose one as the output;
+  - **your Ollama server**, if you turn on the AI DJ.
+- There are no ads, no analytics and no tracking.
+- With **Report playback to Plex** on, plays appear in your Plex server's history like any other Plex app's.
+
+## Problems and ideas
+
+Please [open an issue](https://github.com/Cd084/dukeboxarr/issues). Include:
+- your device and operating system;
+- the DukeBoxarr version (Settings → About);
+- what you did, what you expected, and what happened instead.
+
+---
+
 ## Building
 
 You need the [Flutter SDK](https://docs.flutter.dev/get-started/install). For Windows builds you also need Visual Studio 2022, or its Build Tools, with the C++ desktop workload. Audio playback uses [media_kit](https://pub.dev/packages/media_kit) (libmpv), which is downloaded during the build.
@@ -207,46 +280,7 @@ flutter build windows --release      # build to build\windows\x64\runner\Release
 flutter test                         # unit tests
 ```
 
-### Installing and releasing
-
-**Install on Windows:** run `DukeBoxarr-Setup-<version>.exe`.
-- It installs for the current user without an admin prompt, into `%LOCALAPPDATA%\Programs\DukeBoxarr`.
-- It adds a Start Menu shortcut, plus a desktop shortcut if you tick it.
-- To **update**, run a newer installer. It closes DukeBoxarr if it's running and upgrades in place.
-- Uninstall from Windows Settings → Apps. Settings, the library cache and album numbers are kept.
-
-**Install on Ubuntu 24.04 (or newer):**
-
-```sh
-sudo apt install ./dukeboxarr_<version>_amd64.deb
-```
-- It installs to `/opt/dukeboxarr`, adds **DukeBoxarr** to the app menu, and adds a `dukeboxarr` command.
-- apt pulls in the audio library (`libmpv2`).
-- To **update**, install a newer .deb the same way. To remove it: `sudo apt remove dukeboxarr`.
-- Settings and the library cache live in `~/.local/share/ca.dukebox.dukebox/`.
-
-**Install on Android 15 (or newer):**
-- Copy `DukeBoxarr-<version>.apk` to the tablet and open it.
-- Android asks you to allow installing apps from that source (e.g. Files or your browser) the first time.
-- To **update**, install a newer APK the same way. Settings and the library are kept.
-- **Keep the screen on** (Settings → Display, on by default) stops the tablet sleeping while DukeBoxarr is open.
-- **Playing with the screen off:** while music plays, DukeBoxarr shows a "now playing" notification with lock-screen controls, and keeps the CPU and Wi-Fi awake so the stream from Plex isn't cut.
-- **Settings → Background playback:** tap **Allow** so Android doesn't restrict DukeBoxarr's battery use. On Samsung tablets, also set Settings → Apps → DukeBoxarr → Battery → **Unrestricted**, and make sure DukeBoxarr isn't in "Sleeping apps".
-- **Full screen** hides Android's status and navigation bars.
-
-**Install on an iPad or iPhone (iPadOS/iOS 15 or newer), by sideloading:**
-
-DukeBoxarr isn't on the App Store. The release has an unsigned `DukeBoxarr-<version>.ipa`, which you install with **SideStore** (or AltStore) using your own free Apple ID.
-
-1. Set up **SideStore** on the iPad by following its guide at https://sidestore.io. This is a one-time setup and needs a Windows PC or Mac.
-2. On the iPad, download `DukeBoxarr-<version>.ipa` from the GitHub release.
-3. Open SideStore → **My Apps → +**, and pick the downloaded `.ipa`.
-4. Open DukeBoxarr. When iOS asks to **find devices on your local network**, tap **Allow**; it needs this to reach your Plex server.
-
-Things to know:
-- **Refresh every 7 days.** A free Apple ID signs apps for 7 days. Open SideStore and tap **Refresh**; SideStore can also do this in the background. If it lapses, the app won't open until refreshed. Your settings are kept.
-- **Updates:** install the newer `.ipa` the same way. It replaces the old one and keeps your settings.
-- **Free Apple IDs are limited to 3 sideloaded apps** at once, and SideStore counts as one.
+### Releasing
 
 **Make a release:**
 1. Bump `version:` in `pubspec.yaml`.
@@ -300,3 +334,11 @@ flutter test test/ai_dj_live_test.dart
 | `tool/build_android.ps1` | Builds the signed Android APK |
 | `android/app/proguard-rules.pro` | Stops release-build code shrinking from breaking plugins |
 | `.github/workflows/release.yml` | Builds the installers for each release tag |
+
+---
+
+## Licence
+
+Copyright © 2026 Cd084.
+
+DukeBoxarr is free software: you can share and change it under the terms of the [GNU General Public License v3.0](LICENSE). If you distribute a modified version, you must make its source code available under the same licence. It comes with no warranty.

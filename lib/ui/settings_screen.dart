@@ -543,6 +543,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _section('ABOUT'),
               Text('DukeBoxarr  v${PlexClient.appVersion}',
                   style: const TextStyle(fontSize: 18, color: Jb.chrome)),
+              const SizedBox(height: 6),
+              const Text(
+                  'Copyright © 2026 Cd084. Free software under the GNU General Public License v3: you may share '
+                  'and change it under that licence\'s terms. It comes with no warranty. '
+                  'Not affiliated with or endorsed by Plex.\n'
+                  'Source code and licence: github.com/Cd084/dukeboxarr',
+                  style: TextStyle(color: Jb.chrome)),
             ],
           ],
         ),

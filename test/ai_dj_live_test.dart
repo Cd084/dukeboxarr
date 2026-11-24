@@ -1,7 +1,7 @@
 // ignore_for_file: avoid_print
 // Live check of the AI DJ against the cached library and a real Ollama host.
 // Skipped unless DUKEBOX_LIVE=1. Run:
-//   $env:DUKEBOX_LIVE=1; flutter test test/ai_dj_live_test.dart
+//   $env:DUKEBOX_LIVE=1; $env:OLLAMA_URL='http://<host>:11434'; flutter test test/ai_dj_live_test.dart
 import 'dart:convert';
 import 'dart:io';
 
@@ -17,7 +17,7 @@ void main() {
 
   test('AI DJ picks songs following the seeds', () async {
     SharedPreferences.setMockInitialValues({
-      'ollamaUrl': Platform.environment['OLLAMA_URL'] ?? 'http://192.168.129.32:11434',
+      'ollamaUrl': Platform.environment['OLLAMA_URL'] ?? 'http://localhost:11434',
       'aiModel': Platform.environment['AI_MODEL'] ?? 'qwen3.5:9b',
     });
     final settings = await Settings.load();
