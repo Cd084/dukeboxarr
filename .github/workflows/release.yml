@@ -23,6 +23,7 @@ jobs:
   linux:
     name: Ubuntu 24.04 .deb
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -31,9 +32,12 @@ jobs:
           channel: stable
           cache: true
       - name: Install Linux build dependencies
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev \
+          # Retry and time out stalled mirror downloads instead of hanging.
+          APT='-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30'
+          sudo apt-get $APT update
+          sudo apt-get $APT install -y clang cmake ninja-build pkg-config libgtk-3-dev \
             liblzma-dev libstdc++-12-dev libmpv-dev dpkg-dev
       - run: flutter test
       - run: bash tool/build_linux.sh
@@ -46,6 +50,7 @@ jobs:
   windows:
     name: Windows installer
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -71,6 +76,7 @@ jobs:
   android:
     name: Android APK
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
@@ -114,6 +120,7 @@ jobs:
   ios:
     name: iOS / iPadOS (unsigned .ipa)
     runs-on: macos-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
       - uses: subosito/flutter-action@v2
@@ -145,6 +152,7 @@ jobs:
       needs.android.result == 'success'
     needs: [linux, windows, android, ios]
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/download-artifact@v6
         with:
