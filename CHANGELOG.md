@@ -2,6 +2,11 @@
 
 DukeBoxarr's version lives in `pubspec.yaml` (`version: X.Y.Z+build`). Each release gets a git tag `vX.Y.Z` and an installer built with `tool\build_installer.ps1`.
 
+## 0.13.2 — 2026-11-24
+
+- **DukeBoxarr is now free software under the GPL-3.0 licence.** Settings → About shows the licence notice and where to find the source code.
+- The README has screenshots and a new Install section.
+
 ## 0.13.1 — 2026-11-15
 
 - **Android: the stream keeps going with the screen off.** While music plays, DukeBoxarr now holds a wake lock and a Wi-Fi lock (like Plexamp/Spotify), so a real tablet's Wi-Fi no longer dozes and drops the connection to Plex. Both are released when paused or when the queue ends.
